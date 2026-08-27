@@ -1,12 +1,18 @@
-import { BrowserRouter } from 'react-router-dom'
+
 import RUTASNAV from './COMPONENTES/RUTASNAV'
+import TicketCreatorUser from './COMPONENTES/CREATEMODALUSER/TicketCreatorUser'
+import M3TestEnvironment from './COMPONENTES/EDITMODAL/TESTING/M3TestEnvironment'
+
 
 function App() {
 
   return (
-    <BrowserRouter>
-      <RUTASNAV/>
-    </BrowserRouter>
+    <>
+      <RUTASNAV />
+      <TicketCreatorUser />
+      <hr className="my-5" />
+      <M3TestEnvironment />
+    </>
   )
 }
 
