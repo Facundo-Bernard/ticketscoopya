@@ -1,0 +1,2 @@
+es un modal que te permite exclusivamente agregar una tarjeta, luego lo vamos a llamar desde el ticketmenu 
+cuando haga falta
