@@ -1,2 +1,11 @@
 es un modal que te permite exclusivamente agregar una tarjeta, luego lo vamos a llamar desde el ticketmenu 
 cuando haga falta
+
+NOTA: Ya se ha implementado el componente TicketCreator con todas las funcionalidades solicitadas:
+- Campo de título
+- Campo de descripción  
+- Campo de email
+- Sección de imágenes (agregar/quitar)
+- Botón de enviar
+
+Se han dejado comentarios TODO en las líneas donde se deben definir las rutas del backend.
