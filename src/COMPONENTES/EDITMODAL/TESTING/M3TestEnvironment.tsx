@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ModalTicket from '../ModalTicket';
-import { useModal } from '../../../HOOKS/useModal';
+import { useModal } from '../../../hooks/useModal';
 import { TICKET_STATES, TICKET_STATE_COLORS, TICKET_STATE_LABELS } from '../ticketStates';
 import type { Ticket } from '../types';
 
@@ -18,7 +18,8 @@ const M3TestEnvironment: React.FC = () => {
     imagenes: ['https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800'],
     fechaCreacion: new Date(Date.now() - 86400000 * 2).toISOString(),
     fechaModificacion: new Date(Date.now() - 86400000 * 2).toISOString(),
-    fechaCierre: null
+    fechaCierre: null,
+    frecuencia: { numero: 1, periodo: 'Meses' }
   };
 
   // Inicializar estado desde LocalStorage si existe
@@ -65,23 +66,28 @@ const M3TestEnvironment: React.FC = () => {
                 )}
               </div>
 
-              {ticketGuardado.colaborador && (
-                <div className="mb-2">
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                {ticketGuardado.colaborador && (
                   <span className="badge bg-light text-dark border">
                     <i className="bi bi-person-fill text-info me-1"></i>
                     {ticketGuardado.colaborador}
                   </span>
-                </div>
-              )}
+                )}
 
-              {ticketGuardado.prioridad && (
-                <div className="mb-3">
+                {ticketGuardado.prioridad && (
                   <span className="badge bg-light text-dark border">
                     <i className="bi bi-flag-fill text-danger me-1"></i>
-                    Prioridad: {ticketGuardado.prioridad}
+                    {ticketGuardado.prioridad}
                   </span>
-                </div>
-              )}
+                )}
+
+                {ticketGuardado.frecuencia && ticketGuardado.frecuencia.periodo !== 'No recurrente' && (
+                  <span className="badge bg-secondary">
+                    <i className="bi bi-arrow-repeat me-1"></i>
+                    Cada {ticketGuardado.frecuencia.numero} {ticketGuardado.frecuencia.periodo}
+                  </span>
+                )}
+              </div>
 
               <button
                 className="btn btn-outline-primary w-100 mt-2"

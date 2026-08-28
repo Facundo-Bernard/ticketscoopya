@@ -31,3 +31,6 @@ export const PRIORIDADES: Record<string, string> = {
   MEDIA: 'Media',
   BAJA: 'Baja'
 };
+
+// ---- Períodos de Frecuencia ----
+export const PERIODOS_FRECUENCIA: string[] = ['No recurrente', 'Días', 'Semanas', 'Meses', 'Años'];

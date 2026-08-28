@@ -1,3 +1,10 @@
+export type PeriodoFrecuencia = 'Días' | 'Semanas' | 'Meses' | 'Años' | 'No recurrente';
+
+export interface Frecuencia {
+  numero: number | '';
+  periodo: PeriodoFrecuencia;
+}
+
 export interface Ticket {
   id: number;
   titulo: string;
@@ -10,4 +17,5 @@ export interface Ticket {
   fechaCreacion: string;
   fechaModificacion: string;
   fechaCierre: string | null;
+  frecuencia?: Frecuencia;
 }

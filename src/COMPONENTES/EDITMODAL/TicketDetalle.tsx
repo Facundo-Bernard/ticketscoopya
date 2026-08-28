@@ -22,6 +22,12 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
             <i className="bi bi-person-fill me-1"></i> {ticket.colaborador}
           </span>
         )}
+        {ticket.frecuencia && ticket.frecuencia.periodo !== 'No recurrente' && (
+          <span className="badge bg-secondary">
+            <i className="bi bi-arrow-repeat me-1"></i> 
+            Cada {ticket.frecuencia.numero} {ticket.frecuencia.periodo}
+          </span>
+        )}
       </div>
       <div className="mb-3">
         <strong>Descripción:</strong>

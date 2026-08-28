@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { TICKET_STATES, TICKET_STATE_LABELS, COLABORADORES, PRIORIDADES } from './ticketStates';
-import type { Ticket } from './types';
+import React, { useState, useEffect, useReducer } from 'react';
+import { TICKET_STATES, PRIORIDADES } from './ticketStates';
+import type { Ticket, Frecuencia } from './types';
+import TicketFormCampos from './COMPONENTESFORM/TicketFormCampos';
+import TicketFormImagenes from './COMPONENTESFORM/TicketFormImagenes';
+import TicketFrecuencia from './COMPONENTESFORM/TicketFrecuencia';
+import TicketFormFooter from './COMPONENTESFORM/TicketFormFooter';
 
 interface TicketFormProps {
   ticket: Ticket;
@@ -15,35 +19,68 @@ interface FormData {
   colaborador: string;
   prioridad: string;
   imagenes: string[];
+  frecuencia?: Frecuencia;
+}
+
+type FormAction =
+  | { type: 'SET_DATA'; payload: FormData }
+  | { type: 'CHANGE_FIELD'; name: keyof FormData; value: any }
+  | { type: 'CHANGE_FRECUENCIA'; payload: Frecuencia | undefined }
+  | { type: 'ADD_IMAGE'; payload: string }
+  | { type: 'REMOVE_IMAGE'; payload: number };
+
+function formReducer(state: FormData, action: FormAction): FormData {
+  switch (action.type) {
+    case 'SET_DATA':
+      return action.payload;
+    case 'CHANGE_FIELD':
+      return { ...state, [action.name]: action.value };
+    case 'CHANGE_FRECUENCIA':
+      return { ...state, frecuencia: action.payload };
+    case 'ADD_IMAGE':
+      return { ...state, imagenes: [...state.imagenes, action.payload] };
+    case 'REMOVE_IMAGE':
+      return { ...state, imagenes: state.imagenes.filter((_, i) => i !== action.payload) };
+    default:
+      return state;
+  }
 }
 
 const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, dispatch] = useReducer(formReducer, {
     titulo: '',
     descripcion: '',
     estado: TICKET_STATES.PENDIENTE,
     colaborador: '',
     prioridad: PRIORIDADES.MEDIA,
-    imagenes: []
+    imagenes: [],
+    frecuencia: undefined
   });
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
     if (ticket) {
-      setFormData({
-        titulo: ticket.titulo || '',
-        descripcion: ticket.descripcion || '',
-        estado: ticket.estado || TICKET_STATES.PENDIENTE,
-        colaborador: ticket.colaborador || '',
-        prioridad: ticket.prioridad || PRIORIDADES.MEDIA,
-        imagenes: ticket.imagenes || []
+      dispatch({
+        type: 'SET_DATA',
+        payload: {
+          titulo: ticket.titulo || '',
+          descripcion: ticket.descripcion || '',
+          estado: ticket.estado || TICKET_STATES.PENDIENTE,
+          colaborador: ticket.colaborador || '',
+          prioridad: ticket.prioridad || PRIORIDADES.MEDIA,
+          imagenes: ticket.imagenes || [],
+          frecuencia: ticket.frecuencia
+        }
       });
     }
   }, [ticket]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    dispatch({ type: 'CHANGE_FIELD', name: e.target.name as keyof FormData, value: e.target.value });
+  };
+
+  const handleFrecuenciaChange = (frecuencia: Frecuencia | undefined): void => {
+    dispatch({ type: 'CHANGE_FRECUENCIA', payload: frecuencia });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -51,20 +88,14 @@ const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => 
     if (!file) return;
     const reader = new FileReader();
     reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        imagenes: [...prev.imagenes, reader.result as string]
-      }));
+      dispatch({ type: 'ADD_IMAGE', payload: reader.result as string });
     };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
 
   const handleRemoveImage = (idx: number): void => {
-    setFormData((prev) => ({
-      ...prev,
-      imagenes: prev.imagenes.filter((_, i) => i !== idx)
-    }));
+    dispatch({ type: 'REMOVE_IMAGE', payload: idx });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -89,168 +120,31 @@ const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => 
       <h2 style={{ color: '#002B5E', fontWeight: 700, fontSize: '26px', margin: 0 }}>Edición Ticket</h2>
       <hr className="my-3" />
 
-      {/* Row 1: Título + Asignar */}
-      <div className="row mb-4 align-items-end">
-        <div className="col-8">
-          <input
-            type="text"
-            className="form-control"
-            name="titulo"
-            value={formData.titulo}
-            onChange={handleChange}
-            placeholder="Titulo"
-            required
-            disabled={isSaving}
-          />
-        </div>
-        <div className="col-4">
-          <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
-            Asignar
-          </label>
-          <select
-            className="form-select"
-            name="colaborador"
-            value={formData.colaborador}
-            onChange={handleChange}
-            disabled={isSaving}
-          >
-            <option value="">Seleccionar</option>
-            {COLABORADORES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <TicketFormCampos 
+        formData={formData} 
+        onChange={handleChange} 
+        isSaving={isSaving} 
+      />
 
-      {/* Row 2: Descripción */}
+      <TicketFormImagenes 
+        imagenes={formData.imagenes} 
+        isSaving={isSaving}
+        onAdd={handleImageChange}
+        onRemove={handleRemoveImage}
+      />
+
       <div className="mb-4">
-        <textarea
-          className="form-control"
-          rows={4}
-          name="descripcion"
-          value={formData.descripcion}
-          onChange={handleChange}
-          placeholder="Contanos qué pasó y/o peganos una imagen"
-          required
-          disabled={isSaving}
-          style={{ resize: 'none' }}
+        <TicketFrecuencia 
+          frecuencia={formData.frecuencia} 
+          onChange={handleFrecuenciaChange} 
         />
       </div>
 
-      {/* Row 3: Imágenes */}
-      <div className="d-flex flex-wrap gap-2 align-items-center mb-4">
-        {formData.imagenes.map((img, idx) => (
-          <div key={idx} className="position-relative" style={{ width: '120px', height: '80px' }}>
-            <img
-              src={img}
-              alt={`Adjunto ${idx + 1}`}
-              className="w-100 h-100 rounded"
-              style={{ objectFit: 'cover' }}
-            />
-            <button
-              type="button"
-              className="btn btn-danger position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: '22px', height: '22px', padding: 0, fontSize: '14px', lineHeight: 1, transform: 'translate(35%, -35%)' }}
-              onClick={() => handleRemoveImage(idx)}
-              disabled={isSaving}
-              aria-label="Eliminar imagen"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-
-        {/* Botón dashed para subir imagen */}
-        <input
-          type="file"
-          accept="image/*"
-          id="editmodalImageInput"
-          onChange={handleImageChange}
-          disabled={isSaving}
-          className="d-none"
-        />
-        <label
-          htmlFor="editmodalImageInput"
-          className="d-flex justify-content-center align-items-center rounded"
-          style={{
-            width: '120px',
-            height: '80px',
-            border: '1.5px dashed #adb5bd',
-            cursor: 'pointer',
-            fontSize: '28px',
-            color: '#6c757d',
-            backgroundColor: '#f8f9fa'
-          }}
-          title="Añadir imagen"
-        >
-          +
-        </label>
-      </div>
-
-      {/* Row 4: Estado + Prioridad */}
-      <div className="row mb-4">
-        <div className="col-6">
-          <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
-            Estado
-          </label>
-          <select
-            className="form-select"
-            name="estado"
-            value={formData.estado}
-            onChange={handleChange}
-            disabled={isSaving}
-          >
-            {Object.entries(TICKET_STATES).map(([key, value]) => (
-              <option key={key} value={value}>
-                {TICKET_STATE_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-6">
-          <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
-            Prioridad
-          </label>
-          <select
-            className="form-select"
-            name="prioridad"
-            value={formData.prioridad}
-            onChange={handleChange}
-            disabled={isSaving}
-          >
-            {Object.values(PRIORIDADES).map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Row 5: Creador (izq) + Botones (der) */}
-      <div className="d-flex justify-content-between align-items-end mt-3">
-        {ticket.creadoPor && (
-          <span className="text-muted" style={{ fontSize: '13px' }}>
-            Creado por: <strong>{ticket.creadoPor}</strong>
-          </span>
-        )}
-
-        <div className="d-flex gap-3 ms-auto">
-          <button
-            type="button"
-            className="btn btn-outline-primary px-4"
-            onClick={onCancel}
-            disabled={isSaving}
-          >
-            Volver
-          </button>
-          <button
-            type="submit"
-            className="btn btn-primary px-4"
-            disabled={isSaving}
-          >
-            {isSaving ? 'Guardando…' : 'Finalizar'}
-          </button>
-        </div>
-      </div>
+      <TicketFormFooter 
+        creadoPor={ticket.creadoPor} 
+        onCancel={onCancel} 
+        isSaving={isSaving} 
+      />
     </form>
   );
 };
