@@ -1,4 +1,4 @@
-import { Button, Form, Dropdown } from 'react-bootstrap'
+import { Alert, Button, Form, Dropdown } from 'react-bootstrap'
 import { useTicketForm } from './useTicketForm'
 
 function TicketCreator() {
@@ -9,7 +9,9 @@ function TicketCreator() {
     handleRemoveImage,
     handleAsignarChange,
     handleSubmit,
-    handleVolver
+    handleVolver,
+    isSubmitting,
+    submitError
   } = useTicketForm()
 
   return (
@@ -22,6 +24,7 @@ function TicketCreator() {
           </Button>
         </div>
         <div className="card-body">
+          {submitError && <Alert variant="danger">{submitError}</Alert>}
           <Form onSubmit={handleSubmit}>
             {/* Campo de Título */}
             <Form.Group className="mb-3">
@@ -33,6 +36,7 @@ function TicketCreator() {
                 onChange={handleInputChange}
                 required
                 placeholder="Ingrese el título del ticket"
+                disabled={isSubmitting}
               />
             </Form.Group>
 
@@ -47,6 +51,7 @@ function TicketCreator() {
                 required
                 placeholder="Ingrese la descripción del ticket"
                 rows={4}
+                disabled={isSubmitting}
               />
             </Form.Group>
 
@@ -60,6 +65,7 @@ function TicketCreator() {
                 onChange={handleInputChange}
                 required
                 placeholder="Ingrese su email"
+                disabled={isSubmitting}
               />
             </Form.Group>
 
@@ -67,7 +73,7 @@ function TicketCreator() {
             <Form.Group className="mb-3">
               <Form.Label>Asignar</Form.Label>
               <Dropdown>
-                <Dropdown.Toggle variant="outline-secondary" id="dropdown-asignar">
+                <Dropdown.Toggle variant="outline-secondary" id="dropdown-asignar" disabled={isSubmitting}>
                   {ticketData.asignar || 'Seleccionar'}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
@@ -92,6 +98,7 @@ function TicketCreator() {
                 accept="image/*"
                 multiple
                 onChange={handleImageUpload}
+                disabled={isSubmitting}
               />
               
               {ticketData.imagenes.length > 0 && (
@@ -103,6 +110,7 @@ function TicketCreator() {
                         variant="outline-danger"
                         size="sm"
                         onClick={() => handleRemoveImage(index)}
+                        disabled={isSubmitting}
                       >
                         Eliminar
                       </Button>
@@ -114,11 +122,11 @@ function TicketCreator() {
 
             {/* Botones de acción */}
             <div className="d-flex justify-content-between mt-4">
-              <Button variant="secondary" onClick={handleVolver}>
+              <Button variant="secondary" onClick={handleVolver} disabled={isSubmitting}>
                 Volver
               </Button>
-              <Button variant="primary" type="submit">
-                Enviar
+              <Button variant="primary" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Enviando...' : 'Enviar'}
               </Button>
             </div>
           </Form>

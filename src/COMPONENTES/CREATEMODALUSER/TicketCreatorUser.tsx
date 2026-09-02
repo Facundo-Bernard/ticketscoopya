@@ -1,4 +1,4 @@
-import { Button, Form } from 'react-bootstrap'
+import { Alert, Button, Form } from 'react-bootstrap'
 import { useTicketFormUser } from './useTicketFormUser'
 
 function TicketCreatorUser() {
@@ -8,7 +8,9 @@ function TicketCreatorUser() {
     handleImageUpload,
     handleRemoveImage,
     handleSubmit,
-    handleVolver
+    handleVolver,
+    isSubmitting,
+    submitError
   } = useTicketFormUser()
 
   return (
@@ -18,6 +20,7 @@ function TicketCreatorUser() {
           <h4 className="mb-0">Nuevo Ticket</h4>
         </div>
         <div className="card-body">
+          {submitError && <Alert variant="danger">{submitError}</Alert>}
           <Form onSubmit={handleSubmit}>
             {/* Campo de Título */}
             <Form.Group className="mb-3">
@@ -29,6 +32,7 @@ function TicketCreatorUser() {
                 onChange={handleInputChange}
                 required
                 placeholder="Ingrese el título del ticket"
+                disabled={isSubmitting}
               />
             </Form.Group>
 
@@ -43,6 +47,7 @@ function TicketCreatorUser() {
                 required
                 placeholder="Ingrese la descripción del ticket"
                 rows={4}
+                disabled={isSubmitting}
               />
             </Form.Group>
 
@@ -56,6 +61,7 @@ function TicketCreatorUser() {
                 onChange={handleInputChange}
                 required
                 placeholder="Ingrese su email"
+                disabled={isSubmitting}
               />
             </Form.Group>
 
@@ -67,6 +73,7 @@ function TicketCreatorUser() {
                 accept="image/*"
                 multiple
                 onChange={handleImageUpload}
+                disabled={isSubmitting}
               />
               
               {ticketData.imagenes.length > 0 && (
@@ -78,6 +85,7 @@ function TicketCreatorUser() {
                         variant="outline-danger"
                         size="sm"
                         onClick={() => handleRemoveImage(index)}
+                        disabled={isSubmitting}
                       >
                         Eliminar
                       </Button>
@@ -89,11 +97,11 @@ function TicketCreatorUser() {
 
             {/* Botones de acción */}
             <div className="d-flex justify-content-between mt-4">
-              <Button variant="secondary" onClick={handleVolver}>
+              <Button variant="secondary" onClick={handleVolver} disabled={isSubmitting}>
                 Volver
               </Button>
-              <Button variant="primary" type="submit">
-                Enviar
+              <Button variant="primary" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Enviando...' : 'Enviar'}
               </Button>
             </div>
           </Form>

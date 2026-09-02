@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { submitTicket } from '../../services/ticketService'
 
 interface TicketData {
   titulo: string
@@ -14,6 +15,8 @@ export function useTicketFormUser() {
     email: '',
     imagenes: []
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -42,18 +45,19 @@ export function useTicketFormUser() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // TODO: Definir ruta para enviar el ticket
-    // Esta función debe conectarse con el backend cuando esté disponible
-    console.log('Datos del ticket a enviar:', ticketData)
-    
-    // Limpiar formulario después del envío
-    setTicketData({
-      titulo: '',
-      descripcion: '',
-      email: '',
-      imagenes: []
-    })
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      // El backend confirma el mail y recién después elimina los archivos de AWS.
+      await submitTicket(ticketData)
+      setTicketData({ titulo: '', descripcion: '', email: '', imagenes: [] })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo enviar el ticket.'
+      setSubmitError(message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleVolver = () => {
@@ -67,6 +71,8 @@ export function useTicketFormUser() {
     handleImageUpload,
     handleRemoveImage,
     handleSubmit,
-    handleVolver
+    handleVolver,
+    isSubmitting,
+    submitError
   }
 }
