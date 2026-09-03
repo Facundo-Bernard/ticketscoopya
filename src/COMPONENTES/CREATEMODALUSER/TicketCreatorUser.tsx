@@ -1,23 +1,38 @@
-import { Button, Form } from 'react-bootstrap'
-import { useTicketFormUser } from './useTicketFormUser'
+import { Button, Form, Alert } from 'react-bootstrap';
+import { useTicketFormUser } from './useTicketFormUser';
 
 function TicketCreatorUser() {
   const {
     ticketData,
+    isSubmitting,
+    errorMessage,
+    successMessage,
     handleInputChange,
     handleImageUpload,
     handleRemoveImage,
     handleSubmit,
     handleVolver
-  } = useTicketFormUser()
+  } = useTicketFormUser();
 
   return (
     <div className="container mt-4">
       <div className="card shadow">
         <div className="card-header bg-white">
-          <h4 className="mb-0">Nuevo Ticket</h4>
+          <h4 className="mb-0">Nuevo Ticket de Soporte</h4>
         </div>
         <div className="card-body">
+          {errorMessage && (
+            <Alert variant="danger" dismissible>
+              {errorMessage}
+            </Alert>
+          )}
+
+          {successMessage && (
+            <Alert variant="success">
+              {successMessage}
+            </Alert>
+          )}
+
           <Form onSubmit={handleSubmit}>
             {/* Campo de Título */}
             <Form.Group className="mb-3">
@@ -28,6 +43,7 @@ function TicketCreatorUser() {
                 value={ticketData.titulo}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitting}
                 placeholder="Ingrese el título del ticket"
               />
             </Form.Group>
@@ -41,6 +57,7 @@ function TicketCreatorUser() {
                 value={ticketData.descripcion}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitting}
                 placeholder="Ingrese la descripción del ticket"
                 rows={4}
               />
@@ -55,6 +72,7 @@ function TicketCreatorUser() {
                 value={ticketData.email}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitting}
                 placeholder="Ingrese su email"
               />
             </Form.Group>
@@ -66,6 +84,7 @@ function TicketCreatorUser() {
                 type="file"
                 accept="image/*"
                 multiple
+                disabled={isSubmitting}
                 onChange={handleImageUpload}
               />
               
@@ -73,10 +92,11 @@ function TicketCreatorUser() {
                 <div className="mt-2">
                   {ticketData.imagenes.map((imagen, index) => (
                     <div key={index} className="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                      <span className="small">{imagen.name}</span>
+                      <span className="small text-truncate" style={{ maxWidth: '80%' }}>{imagen.name}</span>
                       <Button
                         variant="outline-danger"
                         size="sm"
+                        disabled={isSubmitting}
                         onClick={() => handleRemoveImage(index)}
                       >
                         Eliminar
@@ -89,18 +109,18 @@ function TicketCreatorUser() {
 
             {/* Botones de acción */}
             <div className="d-flex justify-content-between mt-4">
-              <Button variant="secondary" onClick={handleVolver}>
+              <Button variant="secondary" onClick={handleVolver} disabled={isSubmitting}>
                 Volver
               </Button>
-              <Button variant="primary" type="submit">
-                Enviar
+              <Button variant="primary" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Enviando ticket...' : 'Enviar Ticket'}
               </Button>
             </div>
           </Form>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default TicketCreatorUser
+export default TicketCreatorUser;

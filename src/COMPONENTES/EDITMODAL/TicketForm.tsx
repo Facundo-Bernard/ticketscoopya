@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useReducer } from 'react';
-import { TICKET_STATES, PRIORIDADES } from './ticketStates';
 import type { Ticket, Frecuencia } from './types';
 import TicketFormCampos from './COMPONENTESFORM/TicketFormCampos';
 import TicketFormImagenes from './COMPONENTESFORM/TicketFormImagenes';
@@ -50,9 +49,9 @@ const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => 
   const [formData, dispatch] = useReducer(formReducer, {
     titulo: '',
     descripcion: '',
-    estado: TICKET_STATES.PENDIENTE,
+    estado: 'abierto',
     colaborador: '',
-    prioridad: PRIORIDADES.MEDIA,
+    prioridad: 'media',
     imagenes: [],
     frecuencia: undefined
   });
@@ -65,9 +64,9 @@ const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => 
         payload: {
           titulo: ticket.titulo || '',
           descripcion: ticket.descripcion || '',
-          estado: ticket.estado || TICKET_STATES.PENDIENTE,
+          estado: ticket.estado || 'abierto',
           colaborador: ticket.colaborador || '',
-          prioridad: ticket.prioridad || PRIORIDADES.MEDIA,
+          prioridad: ticket.prioridad || 'media',
           imagenes: ticket.imagenes || [],
           frecuencia: ticket.frecuencia
         }
@@ -107,7 +106,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => 
       ...ticket,
       ...formData,
       fechaModificacion: ahora,
-      fechaCierre: formData.estado === TICKET_STATES.TERMINADO ? ahora : null
+      fechaCierre: (formData.estado === 'cerrado' || formData.estado === 'resuelto') ? ahora : null
     };
 
     onSave(ticketFinal);

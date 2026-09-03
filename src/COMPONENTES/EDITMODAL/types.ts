@@ -6,16 +6,23 @@ export interface Frecuencia {
 }
 
 export interface Ticket {
-  id: number;
+  id: string | number;
+  identificador?: string;
   titulo: string;
   descripcion: string;
   estado: string;
   prioridad: string;
   colaborador: string;
   creadoPor: string;
+  correo?: string;
   imagenes: string[];
   fechaCreacion: string;
   fechaModificacion: string;
   fechaCierre: string | null;
   frecuencia?: Frecuencia;
+}
+
+export interface OptionItem {
+  value: string;
+  label: string;
 }
