@@ -1,26 +1,38 @@
-import { Alert, Button, Form } from 'react-bootstrap'
-import { useTicketFormUser } from './useTicketFormUser'
+import { Button, Form, Alert } from 'react-bootstrap';
+import { useTicketFormUser } from './useTicketFormUser';
 
 function TicketCreatorUser() {
   const {
     ticketData,
+    isSubmitting,
+    errorMessage,
+    successMessage,
     handleInputChange,
     handleImageUpload,
     handleRemoveImage,
     handleSubmit,
-    handleVolver,
-    isSubmitting,
-    submitError
-  } = useTicketFormUser()
+    handleVolver
+  } = useTicketFormUser();
 
   return (
     <div className="container mt-4">
       <div className="card shadow">
         <div className="card-header bg-white">
-          <h4 className="mb-0">Nuevo Ticket</h4>
+          <h4 className="mb-0">Nuevo Ticket de Soporte</h4>
         </div>
         <div className="card-body">
-          {submitError && <Alert variant="danger">{submitError}</Alert>}
+          {errorMessage && (
+            <Alert variant="danger" dismissible>
+              {errorMessage}
+            </Alert>
+          )}
+
+          {successMessage && (
+            <Alert variant="success">
+              {successMessage}
+            </Alert>
+          )}
+
           <Form onSubmit={handleSubmit}>
             {/* Campo de Título */}
             <Form.Group className="mb-3">
@@ -31,8 +43,8 @@ function TicketCreatorUser() {
                 value={ticketData.titulo}
                 onChange={handleInputChange}
                 required
-                placeholder="Ingrese el título del ticket"
                 disabled={isSubmitting}
+                placeholder="Ingrese el título del ticket"
               />
             </Form.Group>
 
@@ -45,9 +57,9 @@ function TicketCreatorUser() {
                 value={ticketData.descripcion}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitting}
                 placeholder="Ingrese la descripción del ticket"
                 rows={4}
-                disabled={isSubmitting}
               />
             </Form.Group>
 
@@ -60,8 +72,8 @@ function TicketCreatorUser() {
                 value={ticketData.email}
                 onChange={handleInputChange}
                 required
-                placeholder="Ingrese su email"
                 disabled={isSubmitting}
+                placeholder="Ingrese su email"
               />
             </Form.Group>
 
@@ -72,20 +84,20 @@ function TicketCreatorUser() {
                 type="file"
                 accept="image/*"
                 multiple
-                onChange={handleImageUpload}
                 disabled={isSubmitting}
+                onChange={handleImageUpload}
               />
               
               {ticketData.imagenes.length > 0 && (
                 <div className="mt-2">
                   {ticketData.imagenes.map((imagen, index) => (
                     <div key={index} className="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                      <span className="small">{imagen.name}</span>
+                      <span className="small text-truncate" style={{ maxWidth: '80%' }}>{imagen.name}</span>
                       <Button
                         variant="outline-danger"
                         size="sm"
-                        onClick={() => handleRemoveImage(index)}
                         disabled={isSubmitting}
+                        onClick={() => handleRemoveImage(index)}
                       >
                         Eliminar
                       </Button>
@@ -101,14 +113,14 @@ function TicketCreatorUser() {
                 Volver
               </Button>
               <Button variant="primary" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Enviando...' : 'Enviar'}
+                {isSubmitting ? 'Enviando ticket...' : 'Enviar Ticket'}
               </Button>
             </div>
           </Form>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default TicketCreatorUser
+export default TicketCreatorUser;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TICKET_STATES, TICKET_STATE_LABELS, COLABORADORES, PRIORIDADES } from '../ticketStates';
+import { useCatalogs } from '../../../COMPOSABLES/useCatalogs';
 
 interface TicketFormCamposProps {
   formData: {
@@ -14,18 +14,23 @@ interface TicketFormCamposProps {
 }
 
 const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange, isSaving }) => {
+  const { estados, prioridades, asignables, isLoading } = useCatalogs();
+
   return (
     <>
       {/* Row 1: Título + Asignar */}
       <div className="row mb-4 align-items-end">
         <div className="col-8">
+          <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
+            Título
+          </label>
           <input
             type="text"
             className="form-control"
             name="titulo"
             value={formData.titulo}
             onChange={onChange}
-            placeholder="Titulo"
+            placeholder="Título del ticket"
             required
             disabled={isSaving}
           />
@@ -39,11 +44,13 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
             name="colaborador"
             value={formData.colaborador}
             onChange={onChange}
-            disabled={isSaving}
+            disabled={isSaving || isLoading}
           >
-            <option value="">Seleccionar</option>
-            {COLABORADORES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+            <option value="">{isLoading ? 'Cargando técnicos...' : 'Seleccionar'}</option>
+            {asignables.map((c) => (
+              <option key={c.value} value={c.label || c.value}>
+                {c.label}
+              </option>
             ))}
           </select>
         </div>
@@ -51,6 +58,9 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
 
       {/* Row 2: Descripción */}
       <div className="mb-4">
+        <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
+          Descripción
+        </label>
         <textarea
           className="form-control"
           rows={4}
@@ -73,13 +83,14 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
           <select
             className="form-select"
             name="estado"
-            value={formData.estado}
+            value={formData.estado ? formData.estado.toLowerCase() : ''}
             onChange={onChange}
-            disabled={isSaving}
+            disabled={isSaving || isLoading}
           >
-            {Object.entries(TICKET_STATES).map(([key, value]) => (
-              <option key={key} value={value}>
-                {TICKET_STATE_LABELS[value]}
+            {isLoading && <option value="">Cargando estados...</option>}
+            {estados.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
             ))}
           </select>
@@ -91,12 +102,15 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
           <select
             className="form-select"
             name="prioridad"
-            value={formData.prioridad}
+            value={formData.prioridad ? formData.prioridad.toLowerCase() : ''}
             onChange={onChange}
-            disabled={isSaving}
+            disabled={isSaving || isLoading}
           >
-            {Object.values(PRIORIDADES).map((p) => (
-              <option key={p} value={p}>{p}</option>
+            {isLoading && <option value="">Cargando prioridades...</option>}
+            {prioridades.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
             ))}
           </select>
         </div>

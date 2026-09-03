@@ -1,5 +1,9 @@
 import React from 'react';
-import { TICKET_STATE_LABELS, TICKET_STATE_COLORS } from './ticketStates';
+import { 
+  TICKET_STATE_COLORS, 
+  PRIORIDAD_COLORS,
+  formatCatalogLabel 
+} from './ticketStates';
 import type { Ticket } from './types';
 
 interface TicketDetalleProps {
@@ -9,19 +13,39 @@ interface TicketDetalleProps {
 const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
   if (!ticket) return null;
 
-  const stateColor = TICKET_STATE_COLORS[ticket.estado] || 'secondary';
-  const stateLabel = TICKET_STATE_LABELS[ticket.estado] || ticket.estado;
+  const estadoNormalizado = (ticket.estado || 'abierto').toLowerCase();
+  const stateColor = TICKET_STATE_COLORS[estadoNormalizado] || 'secondary';
+  const stateLabel = formatCatalogLabel(ticket.estado);
+
+  const prioridadNormalizada = (ticket.prioridad || 'media').toLowerCase();
+  const prioridadColor = PRIORIDAD_COLORS[prioridadNormalizada] || 'secondary';
+  const prioridadLabel = formatCatalogLabel(ticket.prioridad);
 
   return (
     <div>
-      <h4>{ticket.titulo}</h4>
-      <div className="mb-3 d-flex gap-2 align-items-center">
+      <div className="d-flex align-items-center gap-2 mb-2">
+        {ticket.identificador && (
+          <span className="badge bg-dark font-monospace">{ticket.identificador}</span>
+        )}
+        <h4 className="mb-0">{ticket.titulo}</h4>
+      </div>
+
+      <div className="mb-3 d-flex flex-wrap gap-2 align-items-center mt-2">
         <span className={`badge bg-${stateColor}`}>{stateLabel}</span>
-        {ticket.colaborador && (
-          <span className="badge bg-info text-dark">
-            <i className="bi bi-person-fill me-1"></i> {ticket.colaborador}
+
+        {ticket.prioridad && (
+          <span className={`badge bg-${prioridadColor}`}>
+            <i className="bi bi-flag-fill me-1"></i>
+            {prioridadLabel}
           </span>
         )}
+
+        {ticket.colaborador && (
+          <span className="badge bg-light text-dark border">
+            <i className="bi bi-person-fill text-info me-1"></i> {ticket.colaborador}
+          </span>
+        )}
+
         {ticket.frecuencia && ticket.frecuencia.periodo !== 'No recurrente' && (
           <span className="badge bg-secondary">
             <i className="bi bi-arrow-repeat me-1"></i> 
@@ -29,6 +53,7 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
           </span>
         )}
       </div>
+
       <div className="mb-3">
         <strong>Descripción:</strong>
         <p className="mt-2" style={{ whiteSpace: 'pre-wrap' }}>
@@ -58,6 +83,9 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
         <div className="d-flex flex-column gap-1">
           {ticket.creadoPor && (
             <span>Creado por: <strong>{ticket.creadoPor}</strong></span>
+          )}
+          {ticket.correo && ticket.correo !== ticket.creadoPor && (
+            <span>Contacto: <strong>{ticket.correo}</strong></span>
           )}
         </div>
         <div className="d-flex flex-column gap-1 text-end">

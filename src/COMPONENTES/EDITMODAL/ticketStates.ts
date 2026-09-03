@@ -1,36 +1,32 @@
-/* ---- Las constantes tal vez se tengan que mover para abarcar al sistema de forma
- mas general, ya que se utilizan en el registro del ticket. ---- */
+/* ---- Estilos Visuales de Tickets ---- 
+   Las colecciones de Estados, Prioridades y Técnicos Asignables 
+   han sido deprecadas en favor de los catálogos dinámicos del backend (/api/v1/catalogs).
+*/
 
-// ---- Estados ----
-export const TICKET_STATES: Record<string, string> = {
-  PENDIENTE: 'PENDIENTE',
-  EN_PROGRESO: 'EN_PROGRESO',
-  TERMINADO: 'TERMINADO'
-};
-
-export const TICKET_STATE_LABELS: Record<string, string> = {
-  [TICKET_STATES.PENDIENTE]: 'Pendiente',
-  [TICKET_STATES.EN_PROGRESO]: 'En Progreso',
-  [TICKET_STATES.TERMINADO]: 'Terminado'
-};
-
+// Mapeo puramente estético de colores Bootstrap según el estado
 export const TICKET_STATE_COLORS: Record<string, string> = {
-  [TICKET_STATES.PENDIENTE]: 'secondary',
-  [TICKET_STATES.EN_PROGRESO]: 'primary',
-  [TICKET_STATES.TERMINADO]: 'success'
+  abierto: 'info',
+  en_progreso: 'warning',
+  resuelto: 'success',
+  cerrado: 'secondary'
 };
 
-export const COLABORADORES: string[] = [
-  'Nicolas',
-  'Facundo',
-  'Nahuel'
-];
-
-export const PRIORIDADES: Record<string, string> = {
-  ALTA: 'Alta',
-  MEDIA: 'Media',
-  BAJA: 'Baja'
+// Mapeo puramente estético de colores Bootstrap según la prioridad
+export const PRIORIDAD_COLORS: Record<string, string> = {
+  baja: 'secondary',
+  media: 'info',
+  alta: 'warning',
+  critica: 'danger'
 };
 
-// ---- Períodos de Frecuencia ----
+// Períodos de Frecuencia (exclusivo para configuración de recurrencia en EditModal)
 export const PERIODOS_FRECUENCIA: string[] = ['No recurrente', 'Días', 'Semanas', 'Meses', 'Años'];
+
+// Helper para formatear valores en caso de que no venga un label explícito
+export const formatCatalogLabel = (value: string): string => {
+  if (!value) return '';
+  return value
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};

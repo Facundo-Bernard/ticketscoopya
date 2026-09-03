@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TicketDetalle from './TicketDetalle';
 import TicketForm from './TicketForm';
-import { TICKET_STATES } from './ticketStates';
 import type { Ticket } from './types';
 
 interface ModalTicketProps {
@@ -38,7 +37,7 @@ const ModalTicket: React.FC<ModalTicketProps> = ({ ticket, isOpen, onClose, onTi
     if (!ticket) return;
     onTicketUpdated({
       ...ticket,
-      estado: TICKET_STATES.PENDIENTE,
+      estado: 'abierto',
       fechaModificacion: new Date().toISOString(),
       fechaCierre: null
     });
@@ -47,7 +46,7 @@ const ModalTicket: React.FC<ModalTicketProps> = ({ ticket, isOpen, onClose, onTi
 
   if (!isOpen || !ticket) return null;
 
-  const isTerminado = ticket.estado === TICKET_STATES.TERMINADO;
+  const isTerminado = ticket.estado === 'cerrado' || ticket.estado === 'resuelto';
 
   return (
     <>
