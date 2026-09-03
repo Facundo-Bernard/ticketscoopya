@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Soporta VITE_API_URL (común en Vercel) o VITE_BACKEND_URL, con fallback a localhost
-const rawBase = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Prioriza VITE_API_URL (la variable configurada por tu compañero en Vercel)
+const rawBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 // Si la variable ya incluye /api/v1 la usamos directo; si no, la normalizamos
 export const API_BASE_URL = rawBase.endsWith('/api/v1')
