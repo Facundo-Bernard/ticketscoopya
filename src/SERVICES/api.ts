@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-// Prioriza VITE_API_URL (la variable configurada por tu compañero en Vercel)
-const rawBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+// La API debe configurarse explícitamente para evitar conexiones involuntarias
+// al equipo de cada usuario en producción.
+const rawBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
+
+if (!rawBase) {
+  throw new Error(
+    'Falta VITE_API_URL. Configurá el dominio público del backend Railway en las variables de entorno.',
+  );
+}
 
 // Si la variable ya incluye /api/v1 la usamos directo; si no, la normalizamos
 export const API_BASE_URL = rawBase.endsWith('/api/v1')
