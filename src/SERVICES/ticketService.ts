@@ -46,6 +46,35 @@ export interface UpdateTicketInput {
   frecuencia?: any;
 }
 
+type TicketListPayload =
+  | BackendTicketResponse[]
+  | {
+      data?: BackendTicketResponse[];
+      items?: BackendTicketResponse[];
+      tickets?: BackendTicketResponse[];
+      detail?: string;
+    };
+
+const getTicketList = (payload: TicketListPayload): BackendTicketResponse[] => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  const tickets = payload.data ?? payload.items ?? payload.tickets;
+
+  if (Array.isArray(tickets)) {
+    return tickets;
+  }
+
+  if (payload.detail) {
+    throw new Error(`La API no devolvió tickets: ${payload.detail}`);
+  }
+
+  throw new Error(
+    'La API devolvió un formato inesperado. Verificá que VITE_API_URL apunte al backend de Railway.',
+  );
+};
+
 // Mapper de Backend (snake_case) a Frontend (camelCase)
 export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket => {
   return {
@@ -69,8 +98,8 @@ export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket =
 export const ticketService = {
   // Obtener lista de tickets con filtros opcionales
   async getTickets(params?: TicketFilterParams): Promise<Ticket[]> {
-    const response = await api.get<BackendTicketResponse[]>('/tickets/', { params });
-    return response.data.map(mapBackendToFrontendTicket);
+    const response = await api.get<TicketListPayload>('/tickets/', { params });
+    return getTicketList(response.data).map(mapBackendToFrontendTicket);
   },
 
   // Obtener un ticket puntual por ID
