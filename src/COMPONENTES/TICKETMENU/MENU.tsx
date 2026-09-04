@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import Card, { type TicketCard } from './CARDPROP/CARD'
@@ -28,6 +28,11 @@ export default function Menu() {
   const { items: tickets, status, error } = useSelector((state: RootState) => state.tickets)
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
+  const [showFinished, setShowFinished] = useState(false)
+
+  const visibleTickets = showFinished
+    ? tickets.filter((ticket) => ticket.estado === 'resuelto' || ticket.estado === 'cerrado')
+    : tickets
 
   useEffect(() => {
     if (status === 'idle') {
@@ -46,10 +51,14 @@ export default function Menu() {
         <button
           type="button"
           className="btn btn-danger btn-sm px-5 rounded-end-0"
-          onClick={() => dispatch(fetchTickets())}
+          onClick={() => setShowFinished((current) => !current)}
           disabled={status === 'loading'}
         >
-          {status === 'loading' ? 'Actualizando…' : 'Actualizar'}
+          {status === 'loading'
+            ? 'Cargando…'
+            : showFinished
+              ? 'Ver todos'
+              : 'Ver terminados'}
         </button>
       </div>
 
@@ -75,7 +84,7 @@ export default function Menu() {
                   {column.id === 'tickets' && status === 'failed' && (
                     <span className="small text-danger">{error}</span>
                   )}
-                  {tickets
+                  {visibleTickets
                     .filter((ticket) => ticket.columnId === column.id)
                     .map((ticket) => {
                       const card: TicketCard = {
@@ -97,8 +106,10 @@ export default function Menu() {
                         />
                       )
                     })}
-                  {column.id === 'tickets' && status === 'succeeded' && tickets.length === 0 && (
-                    <span className="small text-secondary">No hay tickets para mostrar.</span>
+                  {column.id === 'tickets' && status === 'succeeded' && visibleTickets.length === 0 && (
+                    <span className="small text-secondary">
+                      {showFinished ? 'No hay tickets terminados.' : 'No hay tickets para mostrar.'}
+                    </span>
                   )}
                 </div>
               </section>
