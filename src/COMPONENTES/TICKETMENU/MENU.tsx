@@ -63,6 +63,9 @@ export default function Menu() {
         </div>
       </div>
 
+      {/* Separación entre header y columnas */}
+      <div className="py-3"></div>
+
       <div className="container-fluid flex-grow-1 pb-3">
         <div className="row g-3 px-3">
           {columns.map((column) => (

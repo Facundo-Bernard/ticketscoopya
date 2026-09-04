@@ -9,54 +9,58 @@ export type TicketCard = {
 
 export default function Card({ card, onClick }: { card: TicketCard; onClick: () => void }) {
   return (
-    <div className="card border-2 border-danger shadow-sm text-start w-100">
-      <div className="card-body p-3 position-relative">
-        {/* Icono de lápiz en esquina superior derecha */}
-        <button
-          type="button"
-          className="btn btn-sm position-absolute top-0 end-0 m-2 p-1"
-          onClick={onClick}
-          aria-label={`Editar ${card.title}`}
-        >
-          ✏️
-        </button>
+    <div className="card border-2 border-dark shadow-sm text-start w-100">
+      <div className="card-body p-3">
+        {/* Parte superior: título y usuario (izquierda), fecha y lápiz (derecha) */}
+        <div className="d-flex justify-content-between align-items-start mb-3">
+          {/* Izquierda: título + usuario */}
+          <div className="d-flex align-items-center gap-2">
+            <span className="fs-4">👤</span>
+            <div>
+              <h3 className="h6 mb-0 fw-bold">{card.title}</h3>
+              <small className="text-secondary">{card.user}</small>
+            </div>
+          </div>
 
-        {/* Título */}
-        <h3 className="h5 mb-2 fw-bold">{card.title}</h3>
-
-        {/* Usuario con icono */}
-        <div className="d-flex align-items-center gap-2 mb-2 small text-secondary">
-          <span>👤</span>
-          <span>{card.user}</span>
+          {/* Derecha: fecha + lápiz */}
+          <div className="d-flex align-items-center gap-2">
+            <small className="text-secondary">{card.date}</small>
+            <button
+              type="button"
+              className="btn btn-sm p-1"
+              onClick={onClick}
+              aria-label={`Editar ${card.title}`}
+            >
+              ✏️
+            </button>
+          </div>
         </div>
 
-        {/* Fecha */}
-        <div className="small text-secondary mb-3">
-          {card.date}
-        </div>
-
-        {/* Descripción */}
+        {/* Centro: descripción */}
         <p className="small text-secondary mb-3">{card.description}</p>
 
-        {/* Frecuencia con icono de reloj */}
-        {card.frequency && (
-          <div className="d-flex align-items-center gap-2 mb-3 small text-secondary">
-            <span>🕐</span>
-            <span>{card.frequency}</span>
-          </div>
-        )}
+        {/* Parte inferior: frecuencia + botón ver más */}
+        <div className="d-flex justify-content-between align-items-center">
+          {/* Izquierda: frecuencia con icono de reloj */}
+          {card.frequency && (
+            <div className="d-flex align-items-center gap-2 small text-secondary">
+              <span>🕐</span>
+              <span>{card.frequency}</span>
+            </div>
+          )}
 
-        {/* Botón Ver más */}
-        <button
-          type="button"
-          className="btn btn-primary btn-sm w-100"
-          onClick={(e) => {
-            e.stopPropagation()
-            // Aquí podrías agregar lógica para "ver más"
-          }}
-        >
-          Ver más
-        </button>
+          {/* Derecha: botón ver más pequeño */}
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              // Aquí podrías agregar lógica para "ver más"
+            }}
+          >
+            Ver más
+          </button>
+        </div>
       </div>
     </div>
   )
