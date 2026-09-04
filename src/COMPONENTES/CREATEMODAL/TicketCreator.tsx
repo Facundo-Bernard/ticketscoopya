@@ -18,9 +18,11 @@ function TicketCreator() {
   } = useTicketForm();
 
   const { asignables, prioridades, isLoading: isLoadingCatalogs } = useCatalogs();
+  const safeAsignables = Array.isArray(asignables) ? asignables : [];
+  const safePrioridades = Array.isArray(prioridades) ? prioridades : [];
 
   // Obtener el label legible de la prioridad actual desde el catálogo del backend
-  const prioridadActual = prioridades.find((p) => p.value === ticketData.prioridad);
+  const prioridadActual = safePrioridades.find((p) => p.value === ticketData.prioridad);
   const labelPrioridadActual = prioridadActual ? prioridadActual.label : (ticketData.prioridad || 'Seleccionar Prioridad');
 
   return (
@@ -111,7 +113,7 @@ function TicketCreator() {
                       <Dropdown.Item onClick={() => handleAsignarChange('')}>
                         <em>Sin asignar</em>
                       </Dropdown.Item>
-                      {asignables.map((item) => (
+                      {safeAsignables.map((item) => (
                         <Dropdown.Item 
                           key={item.value} 
                           onClick={() => handleAsignarChange(item.label || item.value)}
@@ -141,7 +143,7 @@ function TicketCreator() {
                       )}
                     </Dropdown.Toggle>
                     <Dropdown.Menu className="w-100">
-                      {prioridades.map((item) => (
+                      {safePrioridades.map((item) => (
                         <Dropdown.Item 
                           key={item.value} 
                           onClick={() => handlePrioridadChange(item.value)}

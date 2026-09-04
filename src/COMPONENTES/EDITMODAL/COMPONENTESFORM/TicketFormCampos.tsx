@@ -15,6 +15,9 @@ interface TicketFormCamposProps {
 
 const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange, isSaving }) => {
   const { estados, prioridades, asignables, isLoading } = useCatalogs();
+  const safeEstados = Array.isArray(estados) ? estados : [];
+  const safePrioridades = Array.isArray(prioridades) ? prioridades : [];
+  const safeAsignables = Array.isArray(asignables) ? asignables : [];
 
   return (
     <>
@@ -47,7 +50,7 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
             disabled={isSaving || isLoading}
           >
             <option value="">{isLoading ? 'Cargando técnicos...' : 'Seleccionar'}</option>
-            {asignables.map((c) => (
+            {safeAsignables.map((c) => (
               <option key={c.value} value={c.label || c.value}>
                 {c.label}
               </option>
@@ -88,7 +91,7 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
             disabled={isSaving || isLoading}
           >
             {isLoading && <option value="">Cargando estados...</option>}
-            {estados.map((item) => (
+            {safeEstados.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
@@ -107,7 +110,7 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
             disabled={isSaving || isLoading}
           >
             {isLoading && <option value="">Cargando prioridades...</option>}
-            {prioridades.map((p) => (
+            {safePrioridades.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
               </option>
