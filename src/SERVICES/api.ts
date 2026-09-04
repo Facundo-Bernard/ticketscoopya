@@ -2,11 +2,11 @@ import axios from 'axios';
 
 // La API debe configurarse explícitamente para evitar conexiones involuntarias
 // al equipo de cada usuario en producción.
-const rawBase = import.meta.env.SUPERLINK || import.meta.env.VITE_BACKEND_URL;
+const rawBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
 
 if (!rawBase) {
   throw new Error(
-    'Falta SUPERLINK. Configurá el dominio público del backend Railway en las variables de entorno.',
+    'Falta VITE_API_URL. Configurá el dominio público del backend Railway en las variables de entorno.',
   );
 }
 
