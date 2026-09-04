@@ -1,6 +1,3 @@
-import pencilIcon from '../../assets/pencil-icon.png'
-import clockIcon from '../../assets/clock-icon.png'
-
 export type TicketCard = {
   id: string
   title: string
@@ -21,7 +18,7 @@ export default function Card({ card, onClick }: { card: TicketCard; onClick: () 
           onClick={onClick}
           aria-label={`Editar ${card.title}`}
         >
-          <img src={pencilIcon} alt="Editar" style={{ width: '20px', height: '20px' }} />
+          ✏️
         </button>
 
         {/* Título */}
@@ -44,7 +41,7 @@ export default function Card({ card, onClick }: { card: TicketCard; onClick: () 
         {/* Frecuencia con icono de reloj */}
         {card.frequency && (
           <div className="d-flex align-items-center gap-2 mb-3 small text-secondary">
-            <img src={clockIcon} alt="Frecuencia" style={{ width: '16px', height: '16px' }} />
+            <span>🕐</span>
             <span>{card.frequency}</span>
           </div>
         )}
