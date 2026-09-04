@@ -55,6 +55,7 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
   const [colaborador, setColaborador] = useState(ticket.colaborador)
   const [estado, setEstado] = useState(ticket.estado)
   const [prioridad, setPrioridad] = useState(ticket.prioridad)
+  const creatorEmail = ticket.correo || ticket.creadoPor
 
   const saveChanges = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -118,6 +119,20 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
                   className="form-control"
                   value={colaborador}
                   onChange={(event) => setColaborador(event.target.value)}
+                />
+              </div>
+
+              <div className="col-12">
+                <label className="form-label fw-bold" htmlFor="correo-creador">
+                  Correo de quien lo generó
+                </label>
+                <input
+                  id="correo-creador"
+                  type="email"
+                  className="form-control"
+                  value={creatorEmail}
+                  readOnly
+                  aria-readonly="true"
                 />
               </div>
 
