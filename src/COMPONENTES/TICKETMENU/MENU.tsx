@@ -47,19 +47,20 @@ export default function Menu() {
 
   return (
     <main className="min-vh-100 d-flex flex-column bg-secondary bg-opacity-50">
-      <div className="d-flex justify-content-end py-2">
-        <button
-          type="button"
-          className="btn btn-danger btn-sm px-5 rounded-end-0"
-          onClick={() => setShowFinished((current) => !current)}
-          disabled={status === 'loading'}
-        >
-          {status === 'loading'
-            ? 'Cargando…'
-            : showFinished
-              ? 'Ver todos'
-              : 'Ver terminados'}
-        </button>
+      {/* Header rojo superior */}
+      <div className="bg-danger py-3">
+        <div className="container d-flex justify-content-end">
+          <button
+            type="button"
+            className="btn btn-light btn-sm px-4"
+            onClick={() => setShowFinished((current) => !current)}
+            disabled={status === 'loading'}
+          >
+            {status === 'loading'
+              ? 'Cargando…'
+              : 'Ver Historial'}
+          </button>
+        </div>
       </div>
 
       <div className="container-fluid flex-grow-1 pb-3">
@@ -68,9 +69,14 @@ export default function Menu() {
             <div key={column.id} className="col-12 col-sm-6 col-lg-3">
               <section className="h-100 bg-white border border-2 border-danger rounded-3 p-3">
                 <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
-                  <span className="badge bg-danger text-truncate px-3 py-2">
+                  <button
+                    type="button"
+                    className="btn btn-danger text-truncate px-3 py-2"
+                    disabled
+                    style={{ cursor: 'default' }}
+                  >
                     {column.title}
-                  </span>
+                  </button>
 
                   <Link to="/crearticket" className="btn btn-primary btn-sm">
                     Nuevo
