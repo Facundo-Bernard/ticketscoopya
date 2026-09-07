@@ -1,8 +1,18 @@
 import { Button, Form, Dropdown, Alert, Spinner } from 'react-bootstrap';
+import { useSearchParams } from 'react-router-dom';
 import { useTicketForm } from './useTicketForm';
 import { useCatalogs } from '../../COMPOSABLES/useCatalogs';
+import { TICKET_COLUMNS } from '../EDITMODAL/types';
 
 function TicketCreator() {
+  const [searchParams] = useSearchParams();
+  const rawCol = searchParams.get('columna');
+  const initialColumna = rawCol
+    ? (isNaN(Number(rawCol))
+        ? (rawCol === 'tickets' ? 1 : rawCol === 'milestones' ? 2 : rawCol === 'tasks' ? 3 : rawCol === 'recurring-tasks' ? 4 : 1)
+        : Number(rawCol))
+    : 1;
+
   const {
     ticketData,
     isSubmitting,
@@ -13,9 +23,10 @@ function TicketCreator() {
     handleRemoveImage,
     handleAsignarChange,
     handlePrioridadChange,
+    handleColumnaChange,
     handleSubmit,
     handleVolver
-  } = useTicketForm();
+  } = useTicketForm(initialColumna);
 
   const { asignables, prioridades, isLoading: isLoadingCatalogs } = useCatalogs();
   const safeAsignables = Array.isArray(asignables) ? asignables : [];
@@ -25,13 +36,16 @@ function TicketCreator() {
   const prioridadActual = safePrioridades.find((p) => p.value === ticketData.prioridad);
   const labelPrioridadActual = prioridadActual ? prioridadActual.label : (ticketData.prioridad || 'Seleccionar Prioridad');
 
+  const columnaActual = TICKET_COLUMNS.find((c) => Number(c.id) === Number(ticketData.columna));
+  const labelColumnaActual = columnaActual ? columnaActual.label : 'Ticket';
+
   return (
     <div className="container mt-4">
       <div className="card shadow">
         <div className="card-header bg-white d-flex justify-content-between align-items-center">
           <h4 className="mb-0">Nuevo Ticket (Interno)</h4>
-          <Button variant="danger" size="sm">
-            TAREAS PERIODICAS
+          <Button variant="danger" size="sm" disabled style={{ cursor: 'default' }}>
+            {columnaActual ? columnaActual.title : 'TICKET'}
           </Button>
         </div>
         <div className="card-body">
@@ -93,7 +107,7 @@ function TicketCreator() {
 
             {/* Fila con Asignar y Prioridad */}
             <div className="row mb-3">
-              <div className="col-md-6">
+              <div className="col-md-4">
                 <Form.Group>
                   <Form.Label>Asignar Técnico</Form.Label>
                   <Dropdown>
@@ -126,7 +140,7 @@ function TicketCreator() {
                 </Form.Group>
               </div>
 
-              <div className="col-md-6">
+              <div className="col-md-4">
                 <Form.Group>
                   <Form.Label>Prioridad</Form.Label>
                   <Dropdown>
@@ -147,6 +161,32 @@ function TicketCreator() {
                         <Dropdown.Item 
                           key={item.value} 
                           onClick={() => handlePrioridadChange(item.value)}
+                        >
+                          {item.label}
+                        </Dropdown.Item>
+                      ))}
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </Form.Group>
+              </div>
+
+              <div className="col-md-4">
+                <Form.Group>
+                  <Form.Label>Columna</Form.Label>
+                  <Dropdown>
+                    <Dropdown.Toggle 
+                      variant="outline-secondary" 
+                      id="dropdown-columna"
+                      className="w-100 text-start d-flex justify-content-between align-items-center"
+                      disabled={isSubmitting}
+                    >
+                      {labelColumnaActual}
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu className="w-100">
+                      {TICKET_COLUMNS.map((item) => (
+                        <Dropdown.Item 
+                          key={item.id} 
+                          onClick={() => handleColumnaChange(item.id)}
                         >
                           {item.label}
                         </Dropdown.Item>

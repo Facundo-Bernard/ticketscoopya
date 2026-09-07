@@ -6,25 +6,9 @@ import { fetchTickets, selectTicket, saveTicket } from '../../REDUX/ticketsSlice
 import type { AppDispatch, RootState } from '../../REDUX/store'
 import ModalTicket from '../EDITMODAL/ModalTicket'
 import type { Ticket } from '../EDITMODAL/types'
+import { TICKET_COLUMNS } from '../EDITMODAL/types'
 
-const columns = [
-  {
-    id: 'tickets',
-    title: 'TICKET',
-  },
-  {
-    id: 'milestones',
-    title: 'HITOS',
-  },
-  {
-    id: 'tasks',
-    title: 'TAREAS',
-  },
-  {
-    id: 'recurring-tasks',
-    title: 'TAREAS PERIÓDICAS',
-  },
-]
+const columns = TICKET_COLUMNS
 
 export default function Menu() {
   const { items: tickets, status, error } = useSelector((state: RootState) => state.tickets)
@@ -103,20 +87,20 @@ export default function Menu() {
                     {column.title}
                   </button>
 
-                  <Link to="/crearticket" className="btn btn-primary btn-sm">
+                  <Link to={`/crearticket?columna=${column.id}`} className="btn btn-primary btn-sm">
                     Nuevo
                   </Link>
                 </div>
 
                 <div className="d-flex flex-column gap-2">
-                  {column.id === 'tickets' && status === 'loading' && (
+                  {column.id === 1 && status === 'loading' && (
                     <span className="small text-secondary">Cargando tickets…</span>
                   )}
-                  {column.id === 'tickets' && status === 'failed' && (
+                  {column.id === 1 && status === 'failed' && (
                     <span className="small text-danger">{error}</span>
                   )}
                   {visibleTickets
-                    .filter((ticket) => ticket.columnId === column.id)
+                    .filter((ticket) => Number(ticket.columnId) === Number(column.id))
                     .map((ticket) => {
                       const card: TicketCard = {
                         id: String(ticket.id),
@@ -138,7 +122,7 @@ export default function Menu() {
                         />
                       )
                     })}
-                  {column.id === 'tickets' && status === 'succeeded' && visibleTickets.length === 0 && (
+                  {status === 'succeeded' && visibleTickets.filter((ticket) => Number(ticket.columnId) === Number(column.id)).length === 0 && (
                     <span className="small text-secondary">
                       {showFinished ? 'No hay tickets terminados.' : 'No hay tickets para mostrar.'}
                     </span>

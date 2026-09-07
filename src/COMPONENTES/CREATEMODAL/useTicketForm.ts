@@ -9,16 +9,18 @@ export interface TicketData {
   asignar: string;
   prioridad: string;
   imagenes: File[];
+  columna: number;
 }
 
-export function useTicketForm(onSuccess?: (ticket: Ticket) => void) {
+export function useTicketForm(initialColumna?: number, onSuccess?: (ticket: Ticket) => void) {
   const [ticketData, setTicketData] = useState<TicketData>({
     titulo: '',
     descripcion: '',
     email: '',
     asignar: '',
     prioridad: 'media',
-    imagenes: []
+    imagenes: [],
+    columna: initialColumna || 1
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -63,6 +65,13 @@ export function useTicketForm(onSuccess?: (ticket: Ticket) => void) {
     }));
   };
 
+  const handleColumnaChange = (value: number) => {
+    setTicketData((prev) => ({
+      ...prev,
+      columna: value
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -76,7 +85,9 @@ export function useTicketForm(onSuccess?: (ticket: Ticket) => void) {
         correo: ticketData.email,
         prioridad: ticketData.prioridad,
         asignar: ticketData.asignar || undefined,
-        files: ticketData.imagenes
+        files: ticketData.imagenes,
+        columnId: ticketData.columna,
+        columna: ticketData.columna,
       });
 
       setSuccessMessage(`¡Ticket creado con éxito! Identificador: ${nuevoTicket.identificador || nuevoTicket.id}`);
@@ -88,14 +99,30 @@ export function useTicketForm(onSuccess?: (ticket: Ticket) => void) {
         email: '',
         asignar: '',
         prioridad: 'media',
-        imagenes: []
+        imagenes: [],
+        columna: initialColumna || 1
       });
 
       if (onSuccess) {
         onSuccess(nuevoTicket);
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Error al conectar con el servidor para crear el ticket';
+      let msg = err.response?.data?.message || err.message || 'Error al conectar con el servidor para crear el ticket';
+      
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+        if (typeof detail === 'string') {
+          msg = detail;
+        } else if (Array.isArray(detail)) {
+          msg = detail
+            .map((item: any) => {
+              const field = item.loc ? item.loc[item.loc.length - 1] : '';
+              return `${field ? field + ': ' : ''}${item.msg}`;
+            })
+            .join(' | ');
+        }
+      }
+
       setErrorMessage(msg);
       console.error('Error al crear ticket:', err);
     } finally {
@@ -117,6 +144,7 @@ export function useTicketForm(onSuccess?: (ticket: Ticket) => void) {
     handleRemoveImage,
     handleAsignarChange,
     handlePrioridadChange,
+    handleColumnaChange,
     handleSubmit,
     handleVolver
   };

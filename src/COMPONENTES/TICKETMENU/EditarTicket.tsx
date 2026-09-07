@@ -4,7 +4,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { RootState } from '../../REDUX/store'
 import { fetchTicketById, saveTicket, selectTicket } from '../../REDUX/ticketsSlice'
 import type { AppDispatch } from '../../REDUX/store'
-import type { Ticket } from '../EDITMODAL/types'
+import { type Ticket, TICKET_COLUMNS } from '../EDITMODAL/types'
 
 export default function EditarTicket() {
   const { ticketId } = useParams()
@@ -55,6 +55,9 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
   const [colaborador, setColaborador] = useState(ticket.colaborador)
   const [estado, setEstado] = useState(ticket.estado)
   const [prioridad, setPrioridad] = useState(ticket.prioridad)
+  const initialCol = ticket.columnId ?? ticket.columna ?? 1
+  const initialColNum = typeof initialCol === 'number' ? initialCol : isNaN(Number(initialCol)) ? 1 : Number(initialCol)
+  const [columna, setColumna] = useState<number>(initialColNum)
   const creatorEmail = ticket.correo || ticket.creadoPor
 
   const saveChanges = async (event: FormEvent<HTMLFormElement>) => {
@@ -64,14 +67,16 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
     try {
       await dispatch(
         saveTicket({
-        ...ticket,
-        titulo,
-        descripcion,
-        colaborador,
-        estado,
-        prioridad,
-        fechaModificacion: now,
-        fechaCierre: estado === 'cerrado' || estado === 'resuelto' ? now : null,
+          ...ticket,
+          titulo,
+          descripcion,
+          colaborador,
+          estado,
+          prioridad,
+          columnId: columna,
+          columna,
+          fechaModificacion: now,
+          fechaCierre: estado === 'cerrado' || estado === 'resuelto' ? now : null,
         }),
       ).unwrap()
       navigate('/')
@@ -150,7 +155,7 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
                 />
               </div>
 
-              <div className="col-md-6">
+              <div className="col-md-4">
                 <label className="form-label fw-bold" htmlFor="estado">
                   Estado
                 </label>
@@ -167,7 +172,7 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
                 </select>
               </div>
 
-              <div className="col-md-6">
+              <div className="col-md-4">
                 <label className="form-label fw-bold" htmlFor="prioridad">
                   Prioridad
                 </label>
@@ -181,6 +186,24 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
                   <option value="media">Media</option>
                   <option value="alta">Alta</option>
                   <option value="critica">Crítica</option>
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label fw-bold" htmlFor="columna">
+                  Columna
+                </label>
+                <select
+                  id="columna"
+                  className="form-select"
+                  value={columna}
+                  onChange={(event) => setColumna(Number(event.target.value))}
+                >
+                  {TICKET_COLUMNS.map((col) => (
+                    <option key={col.id} value={col.id}>
+                      {col.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

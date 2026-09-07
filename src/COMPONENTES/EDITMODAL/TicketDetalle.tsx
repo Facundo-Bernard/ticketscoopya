@@ -4,7 +4,7 @@ import {
   PRIORIDAD_COLORS,
   formatCatalogLabel 
 } from './ticketStates';
-import type { Ticket } from './types';
+import { type Ticket, TICKET_COLUMNS } from './types';
 
 interface TicketDetalleProps {
   ticket: Ticket | null;
@@ -20,6 +20,9 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
   const prioridadNormalizada = (ticket.prioridad || 'media').toLowerCase();
   const prioridadColor = PRIORIDAD_COLORS[prioridadNormalizada] || 'secondary';
   const prioridadLabel = formatCatalogLabel(ticket.prioridad);
+
+  const columnaId = ticket.columnId ?? ticket.columna;
+  const columnaLabel = TICKET_COLUMNS.find((c) => Number(c.id) === Number(columnaId))?.label || columnaId;
 
   return (
     <div>
@@ -37,6 +40,13 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
           <span className={`badge bg-${prioridadColor}`}>
             <i className="bi bi-flag-fill me-1"></i>
             {prioridadLabel}
+          </span>
+        )}
+
+        {columnaId && (
+          <span className="badge bg-light text-dark border">
+            <span className="me-1">📌</span>
+            {columnaLabel}
           </span>
         )}
 

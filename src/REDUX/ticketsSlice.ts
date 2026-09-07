@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 import type { Ticket } from '../COMPONENTES/EDITMODAL/types'
 import { ticketService } from '../SERVICES/ticketService'
 
-type StoredTicket = Ticket & { columnId: string }
+type StoredTicket = Ticket & { columnId: number }
 
 type TicketsState = {
   items: StoredTicket[]
@@ -47,28 +47,59 @@ export const saveTicket = createAsyncThunk<Ticket, Ticket, { rejectValue: string
   'tickets/saveTicket',
   async (ticket, { rejectWithValue }) => {
     try {
-      return await ticketService.updateTicket(ticket.id, {
+      const updatedTicket = await ticketService.updateTicket(ticket.id, {
         titulo: ticket.titulo,
         descripcion: ticket.descripcion,
         estado: ticket.estado,
         prioridad: ticket.prioridad,
         colaborador: ticket.colaborador,
         frecuencia: ticket.frecuencia,
+        columnId: ticket.columnId,
+        columna: ticket.columna || ticket.columnId,
       })
+
+      return {
+        ...updatedTicket,
+        columnId: updatedTicket.columnId || ticket.columnId,
+      }
     } catch (error) {
       return rejectWithValue(messageFromError(error))
     }
   },
 )
 
-const toStoredTicket = (ticket: Ticket, current?: StoredTicket): StoredTicket => ({
-  ...ticket,
-  columnId:
-    current?.columnId ??
-    (ticket.frecuencia && ticket.frecuencia.periodo !== 'No recurrente'
-      ? 'recurring-tasks'
-      : 'tickets'),
-})
+const toStoredTicket = (ticket: Ticket, current?: StoredTicket): StoredTicket => {
+  const explicit = ticket.columnId ?? ticket.columna ?? current?.columnId;
+  let resolved: number | undefined;
+
+  if (explicit !== undefined && explicit !== null) {
+    if (typeof explicit === 'number') {
+      resolved = explicit;
+    } else {
+      const parsed = Number(explicit);
+      if (!isNaN(parsed)) {
+        resolved = parsed;
+      } else {
+        if (explicit === 'tickets') resolved = 1;
+        else if (explicit === 'milestones') resolved = 2;
+        else if (explicit === 'tasks') resolved = 3;
+        else if (explicit === 'recurring-tasks') resolved = 4;
+      }
+    }
+  }
+
+  if (resolved === undefined) {
+    resolved = (ticket.frecuencia && ticket.frecuencia.periodo !== 'No recurrente')
+      ? 4 // TAREAS PERIÓDICAS
+      : 1; // TICKET
+  }
+
+  return {
+    ...ticket,
+    columnId: resolved,
+    columna: resolved,
+  };
+}
 
 const ticketsSlice = createSlice({
   name: 'tickets',

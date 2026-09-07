@@ -19,6 +19,7 @@ interface FormData {
   prioridad: string;
   imagenes: string[];
   frecuencia?: Frecuencia;
+  columnId: number;
 }
 
 type FormAction =
@@ -53,12 +54,16 @@ const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => 
     colaborador: '',
     prioridad: 'media',
     imagenes: [],
-    frecuencia: undefined
+    frecuencia: undefined,
+    columnId: 1,
   });
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
     if (ticket) {
+      const colVal = ticket.columnId ?? ticket.columna ?? 1;
+      const colNum = typeof colVal === 'number' ? colVal : isNaN(Number(colVal)) ? 1 : Number(colVal);
+
       dispatch({
         type: 'SET_DATA',
         payload: {
@@ -68,14 +73,16 @@ const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => 
           colaborador: ticket.colaborador || '',
           prioridad: ticket.prioridad || 'media',
           imagenes: ticket.imagenes || [],
-          frecuencia: ticket.frecuencia
+          frecuencia: ticket.frecuencia,
+          columnId: colNum,
         }
       });
     }
   }, [ticket]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void => {
-    dispatch({ type: 'CHANGE_FIELD', name: e.target.name as keyof FormData, value: e.target.value });
+    const value = e.target.name === 'columnId' ? Number(e.target.value) : e.target.value;
+    dispatch({ type: 'CHANGE_FIELD', name: e.target.name as keyof FormData, value });
   };
 
   const handleFrecuenciaChange = (frecuencia: Frecuencia | undefined): void => {
@@ -105,6 +112,8 @@ const TicketForm: React.FC<TicketFormProps> = ({ ticket, onCancel, onSave }) => 
     const ticketFinal: Ticket = {
       ...ticket,
       ...formData,
+      columnId: formData.columnId,
+      columna: formData.columnId,
       fechaModificacion: ahora,
       fechaCierre: (formData.estado === 'cerrado' || formData.estado === 'resuelto') ? ahora : null
     };

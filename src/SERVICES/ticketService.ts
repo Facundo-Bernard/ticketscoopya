@@ -14,6 +14,9 @@ export interface BackendTicketResponse {
   fecha_creacion: string;
   fecha_edicion?: string | null;
   frecuencia?: any;
+  columna?: number | string;
+  column_id?: number | string;
+  columnId?: number | string;
 }
 
 export interface TicketFilterParams {
@@ -34,6 +37,8 @@ export interface CreateTicketInput {
   asignar?: string;
   files?: File[];
   frecuencia?: any;
+  columnId?: number | string;
+  columna?: number | string;
 }
 
 export interface UpdateTicketInput {
@@ -44,6 +49,8 @@ export interface UpdateTicketInput {
   colaborador?: string;
   asignar?: string;
   frecuencia?: any;
+  columnId?: number | string;
+  columna?: number | string;
 }
 
 type TicketListPayload =
@@ -77,6 +84,12 @@ const getTicketList = (payload: TicketListPayload): BackendTicketResponse[] => {
 
 // Mapper de Backend (snake_case) a Frontend (camelCase)
 export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket => {
+  const rawCol = raw.columna ?? raw.column_id ?? raw.columnId;
+  const parsedCol =
+    rawCol !== undefined && rawCol !== null
+      ? (typeof rawCol === 'number' ? rawCol : isNaN(Number(rawCol)) ? rawCol : Number(rawCol))
+      : undefined;
+
   return {
     id: raw.id,
     identificador: raw.identificador,
@@ -91,7 +104,9 @@ export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket =
     fechaCreacion: raw.fecha_creacion,
     fechaModificacion: raw.fecha_edicion || raw.fecha_creacion,
     fechaCierre: raw.estado === 'cerrado' || raw.estado === 'resuelto' ? (raw.fecha_edicion || null) : null,
-    frecuencia: raw.frecuencia
+    frecuencia: raw.frecuencia,
+    columnId: parsedCol,
+    columna: parsedCol,
   };
 };
 
@@ -121,6 +136,10 @@ export const ticketService = {
     if (input.asignar) {
       formData.append('asignar', input.asignar);
     }
+    if (input.columnId !== undefined || input.columna !== undefined) {
+      const col = input.columnId ?? input.columna;
+      formData.append('columna', String(col));
+    }
     if (input.files && input.files.length > 0) {
       input.files.forEach((file) => {
         formData.append('files', file);
@@ -147,6 +166,12 @@ export const ticketService = {
     if (input.colaborador !== undefined) payload.asignar = input.colaborador;
     if (input.asignar !== undefined) payload.asignar = input.asignar;
     if (input.frecuencia !== undefined) payload.frecuencia = input.frecuencia;
+    if (input.columnId !== undefined || input.columna !== undefined) {
+      const col = input.columnId ?? input.columna;
+      const numCol = typeof col === 'number' ? col : isNaN(Number(col)) ? col : Number(col);
+      payload.columna = numCol;
+      payload.columnId = numCol;
+    }
 
     const response = await api.patch<BackendTicketResponse>(`/tickets/${id}`, payload);
     return mapBackendToFrontendTicket(response.data);

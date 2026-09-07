@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCatalogs } from '../../../COMPOSABLES/useCatalogs';
+import { TICKET_COLUMNS } from '../types';
 
 interface TicketFormCamposProps {
   formData: {
@@ -8,6 +9,7 @@ interface TicketFormCamposProps {
     colaborador: string;
     estado: string;
     prioridad: string;
+    columnId?: number | string;
   };
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   isSaving: boolean;
@@ -77,9 +79,9 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
         />
       </div>
 
-      {/* Row 4: Estado + Prioridad */}
+      {/* Row 3: Estado + Prioridad + Columna */}
       <div className="row mb-4">
-        <div className="col-6">
+        <div className="col-4">
           <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
             Estado
           </label>
@@ -98,7 +100,7 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
             ))}
           </select>
         </div>
-        <div className="col-6">
+        <div className="col-4">
           <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
             Prioridad
           </label>
@@ -113,6 +115,24 @@ const TicketFormCampos: React.FC<TicketFormCamposProps> = ({ formData, onChange,
             {safePrioridades.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="col-4">
+          <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
+            Columna
+          </label>
+          <select
+            className="form-select"
+            name="columnId"
+            value={formData.columnId ?? 1}
+            onChange={onChange}
+            disabled={isSaving}
+          >
+            {TICKET_COLUMNS.map((col) => (
+              <option key={col.id} value={col.id}>
+                {col.label}
               </option>
             ))}
           </select>
