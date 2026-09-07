@@ -72,7 +72,7 @@ const ModalTicket: React.FC<ModalTicketProps> = ({
         }}
       >
         <div className="modal-dialog modal-dialog-centered modal-lg">
-          <div className="modal-content" style={{ borderRadius: '8px', border: 'none' }}>
+          <div className="modal-content border border-2 border-danger rounded-3">
             {isEditing ? (
               <div className="modal-body p-4">
                 <TicketForm

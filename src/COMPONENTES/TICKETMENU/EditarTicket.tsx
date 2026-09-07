@@ -31,14 +31,14 @@ export default function EditarTicket() {
     return (
       <main className="min-vh-100 bg-secondary bg-opacity-50 py-4">
         <div className="container" style={{ maxWidth: '850px' }}>
-          <section className="bg-white border border-2 border-danger rounded-3 p-4 shadow-sm text-center">
+          <div className="card shadow border border-2 border-danger rounded-3 p-4 text-center">
             <p className={status === 'failed' ? 'text-danger mb-3' : 'text-secondary mb-3'}>
               {status === 'failed' ? error : 'Cargando ticket…'}
             </p>
             <button type="button" className="btn btn-outline-primary" onClick={() => navigate('/')}>
               Volver al menú
             </button>
-          </section>
+          </div>
         </div>
       </main>
     )
@@ -88,13 +88,11 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
   return (
     <main className="min-vh-100 bg-secondary bg-opacity-50 py-4">
       <div className="container" style={{ maxWidth: '850px' }}>
-        <section className="bg-white border border-2 border-danger rounded-3 p-4 shadow-sm">
+        <div className="card shadow border border-2 border-danger rounded-3 p-4">
           <div className="d-flex justify-content-between align-items-center gap-3 mb-4">
             <div>
               <span className="badge bg-danger mb-2">{ticket.identificador}</span>
-              <h1 className="h3 mb-0" style={{ color: '#002B5E' }}>
-                Editar ticket
-              </h1>
+              <h4 className="mb-0 fw-bold">Editar ticket</h4>
             </div>
             <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/')}>
               Volver
@@ -217,7 +215,7 @@ function TicketEditor({ ticket }: { ticket: Ticket }) {
               </button>
             </div>
           </form>
-        </section>
+        </div>
       </div>
     </main>
   )
