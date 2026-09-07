@@ -71,7 +71,7 @@ export default function Menu() {
     <main className="min-vh-100 d-flex flex-column bg-secondary bg-opacity-50">
       {/* Header rojo superior */}
       <div className="bg-danger py-3">
-        <div className="container d-flex justify-content-end">
+        <div className="container-fluid w-100 d-flex justify-content-end">
           <button
             type="button"
             className="btn btn-light btn-sm px-4"
