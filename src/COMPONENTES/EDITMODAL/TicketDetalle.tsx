@@ -64,15 +64,39 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
       {ticket.imagenes && ticket.imagenes.length > 0 && (
         <div className="mb-3">
           <strong>Imágenes Adjuntas:</strong>
-          <div className="mt-2 d-flex flex-wrap gap-2 justify-content-center">
+          <div className="mt-2 d-flex flex-wrap gap-3 justify-content-start">
             {ticket.imagenes.map((img, idx) => (
-              <img 
+              <a
                 key={idx}
-                src={img} 
-                alt={`Adjunto ${idx + 1}`} 
-                className="img-fluid rounded border shadow-sm" 
-                style={{ maxHeight: '200px', objectFit: 'contain' }}
-              />
+                href={img}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Clic para ver en tamaño completo"
+                className="d-inline-block position-relative text-decoration-none"
+              >
+                <img 
+                  src={img} 
+                  alt={`Adjunto ${idx + 1}`} 
+                  className="img-fluid rounded border shadow-sm" 
+                  style={{ 
+                    maxHeight: '180px', 
+                    maxWidth: '220px', 
+                    objectFit: 'cover', 
+                    cursor: 'pointer',
+                    backgroundColor: '#f8f9fa'
+                  }}
+                  onError={(e) => {
+                    // Fallback visual si la imagen no carga
+                    (e.currentTarget as HTMLImageElement).style.opacity = '0.5';
+                  }}
+                />
+                <span 
+                  className="badge bg-dark bg-opacity-75 position-absolute bottom-0 end-0 m-1"
+                  style={{ fontSize: '11px' }}
+                >
+                  🔍 Ampliar
+                </span>
+              </a>
             ))}
           </div>
         </div>

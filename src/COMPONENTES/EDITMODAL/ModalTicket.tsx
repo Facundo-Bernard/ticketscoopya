@@ -7,10 +7,17 @@ interface ModalTicketProps {
   ticket: Ticket | null;
   isOpen: boolean;
   onClose: () => void;
-  onTicketUpdated: (ticket: Ticket) => void;
+  onTicketUpdated?: (ticket: Ticket) => void;
+  onEditTicket?: (ticket: Ticket) => void;
 }
 
-const ModalTicket: React.FC<ModalTicketProps> = ({ ticket, isOpen, onClose, onTicketUpdated }) => {
+const ModalTicket: React.FC<ModalTicketProps> = ({ 
+  ticket, 
+  isOpen, 
+  onClose, 
+  onTicketUpdated,
+  onEditTicket 
+}) => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   useEffect(() => {
@@ -20,6 +27,11 @@ const ModalTicket: React.FC<ModalTicketProps> = ({ ticket, isOpen, onClose, onTi
   }, [isOpen]);
 
   const handleEditClick = (): void => {
+    if (onEditTicket && ticket) {
+      onEditTicket(ticket);
+      onClose();
+      return;
+    }
     setIsEditing(true);
   };
 
@@ -28,14 +40,14 @@ const ModalTicket: React.FC<ModalTicketProps> = ({ ticket, isOpen, onClose, onTi
   };
 
   const handleSave = (ticketModificado: Ticket): void => {
-    onTicketUpdated(ticketModificado);
+    onTicketUpdated?.(ticketModificado);
     setIsEditing(false);
     onClose();
   };
 
   const handleReactivar = (): void => {
     if (!ticket) return;
-    onTicketUpdated({
+    onTicketUpdated?.({
       ...ticket,
       estado: 'abierto',
       fechaModificacion: new Date().toISOString(),

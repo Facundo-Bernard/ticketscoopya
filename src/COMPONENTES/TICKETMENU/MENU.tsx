@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import Card, { type TicketCard } from './CARDPROP/CARD'
-import { fetchTickets, selectTicket } from '../../REDUX/ticketsSlice'
+import { fetchTickets, selectTicket, saveTicket } from '../../REDUX/ticketsSlice'
 import type { AppDispatch, RootState } from '../../REDUX/store'
+import ModalTicket from '../EDITMODAL/ModalTicket'
+import type { Ticket } from '../EDITMODAL/types'
 
 const columns = [
   {
@@ -29,6 +31,8 @@ export default function Menu() {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
   const [showFinished, setShowFinished] = useState(false)
+  const [selectedDetailTicket, setSelectedDetailTicket] = useState<Ticket | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   const visibleTickets = showFinished
     ? tickets.filter((ticket) => ticket.estado === 'resuelto' || ticket.estado === 'cerrado')
@@ -43,6 +47,24 @@ export default function Menu() {
   const openTicket = (ticketId: string) => {
     dispatch(selectTicket(ticketId))
     navigate(`/editar-ticket/${ticketId}`)
+  }
+
+  const handleViewMore = (ticket: Ticket) => {
+    setSelectedDetailTicket(ticket)
+    setIsDetailOpen(true)
+  }
+
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false)
+    setSelectedDetailTicket(null)
+  }
+
+  const handleTicketUpdated = (updatedTicket: Ticket) => {
+    dispatch(saveTicket(updatedTicket))
+  }
+
+  const handleEditFromModal = (ticket: Ticket) => {
+    openTicket(String(ticket.id))
   }
 
   return (
@@ -112,6 +134,7 @@ export default function Menu() {
                           key={card.id}
                           card={card}
                           onClick={() => openTicket(card.id)}
+                          onViewMore={() => handleViewMore(ticket)}
                         />
                       )
                     })}
@@ -126,6 +149,14 @@ export default function Menu() {
           ))}
         </div>
       </div>
+
+      <ModalTicket
+        ticket={selectedDetailTicket}
+        isOpen={isDetailOpen}
+        onClose={handleCloseDetail}
+        onTicketUpdated={handleTicketUpdated}
+        onEditTicket={handleEditFromModal}
+      />
     </main>
   )
 }

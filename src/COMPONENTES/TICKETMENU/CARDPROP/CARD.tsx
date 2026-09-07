@@ -7,7 +7,15 @@ export type TicketCard = {
   frequency?: string
 }
 
-export default function Card({ card, onClick }: { card: TicketCard; onClick: () => void }) {
+export default function Card({ 
+  card, 
+  onClick, 
+  onViewMore 
+}: { 
+  card: TicketCard; 
+  onClick: () => void; 
+  onViewMore?: () => void;
+}) {
   return (
     <div className="card border-2 border-dark shadow-sm text-start w-100">
       <div className="card-body p-3">
@@ -55,7 +63,7 @@ export default function Card({ card, onClick }: { card: TicketCard; onClick: () 
             className="btn btn-primary btn-sm"
             onClick={(e) => {
               e.stopPropagation()
-              // Aquí podrías agregar lógica para "ver más"
+              onViewMore?.()
             }}
           >
             Ver más
