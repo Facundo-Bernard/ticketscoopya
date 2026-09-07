@@ -26,10 +26,11 @@ function TicketCreator() {
   const labelPrioridadActual = prioridadActual ? prioridadActual.label : (ticketData.prioridad || 'Seleccionar Prioridad');
 
   return (
-    <div className="container mt-4">
-      <div className="card shadow">
+    <main className="min-vh-100 bg-secondary bg-opacity-50 py-4">
+      <div className="container">
+        <div className="card shadow border border-2 border-danger rounded-3">
         <div className="card-header bg-white d-flex justify-content-between align-items-center">
-          <h4 className="mb-0">Nuevo Ticket (Interno)</h4>
+          <h4 className="mb-0 fw-bold">Nuevo Ticket (Interno)</h4>
           <Button variant="danger" size="sm">
             TAREAS PERIODICAS
           </Button>
@@ -207,6 +208,7 @@ function TicketCreator() {
         </div>
       </div>
     </div>
+    </main>
   );
 }
 
