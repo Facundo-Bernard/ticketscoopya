@@ -1,22 +1,52 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import Card, { type TicketCard } from './CARDPROP/CARD'
-import { fetchTickets, selectTicket, saveTicket } from '../../REDUX/ticketsSlice'
+import { fetchTickets, saveTicket, deleteTicket } from '../../REDUX/ticketsSlice'
 import type { AppDispatch, RootState } from '../../REDUX/store'
-import ModalTicket from '../EDITMODAL/ModalTicket'
-import type { Ticket } from '../EDITMODAL/types'
-import { TICKET_COLUMNS } from '../EDITMODAL/types'
+import { ModalTicket, ModalConfirmarEliminar } from '../EDITMODAL'
+import { TicketCreator } from '../CREATEMODAL'
+import type { Ticket } from '../../TYPES'
+import { TICKET_COLUMNS } from '../../TYPES'
+import { useModal } from '../../hooks'
+import MenuHeader from './MenuHeader'
+import BoardColumn from './BoardColumn'
 
 const columns = TICKET_COLUMNS
+
+interface TicketModalData {
+  ticket: Ticket;
+  isEditing?: boolean;
+}
 
 export default function Menu() {
   const { items: tickets, status, error } = useSelector((state: RootState) => state.tickets)
   const dispatch = useDispatch<AppDispatch>()
-  const navigate = useNavigate()
   const [showFinished, setShowFinished] = useState(false)
-  const [selectedDetailTicket, setSelectedDetailTicket] = useState<Ticket | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+
+  // Modal para ver detalles o editar ticket existente
+  const {
+    isOpen: isDetailOpen,
+    selectedData: detailModalData,
+    openModal: openDetailModal,
+    closeModal: closeDetailModal
+  } = useModal<TicketModalData>()
+
+  // Modal para crear nuevo ticket de soporte
+  const {
+    isOpen: isCreateOpen,
+    selectedData: createColumnId,
+    openModal: openCreateModal,
+    closeModal: closeCreateModal
+  } = useModal<number>()
+
+  // Modal de confirmación para eliminar ticket
+  const {
+    isOpen: isDeleteOpen,
+    selectedData: ticketToDelete,
+    openModal: openDeleteModal,
+    closeModal: closeDeleteModal
+  } = useModal<Ticket>()
+
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const visibleTickets = showFinished
     ? tickets.filter((ticket) => ticket.estado === 'resuelto' || ticket.estado === 'cerrado')
@@ -28,119 +58,85 @@ export default function Menu() {
     }
   }, [dispatch, status])
 
-  const openTicket = (ticketId: string) => {
-    dispatch(selectTicket(ticketId))
-    navigate(`/editar-ticket/${ticketId}`)
+  const handleTicketCreated = () => {
+    dispatch(fetchTickets())
+    closeCreateModal()
   }
 
-  const handleViewMore = (ticket: Ticket) => {
-    setSelectedDetailTicket(ticket)
-    setIsDetailOpen(true)
+  const handleTicketUpdated = async (updatedTicket: Ticket) => {
+    await dispatch(saveTicket(updatedTicket)).unwrap()
+    dispatch(fetchTickets())
   }
 
-  const handleCloseDetail = () => {
-    setIsDetailOpen(false)
-    setSelectedDetailTicket(null)
-  }
-
-  const handleTicketUpdated = (updatedTicket: Ticket) => {
-    dispatch(saveTicket(updatedTicket))
-  }
-
-  const handleEditFromModal = (ticket: Ticket) => {
-    openTicket(String(ticket.id))
+  const handleConfirmDelete = async () => {
+    if (!ticketToDelete) return
+    try {
+      setIsDeleting(true)
+      await dispatch(deleteTicket(ticketToDelete.id)).unwrap()
+      closeDeleteModal()
+    } catch (err) {
+      console.error('Error al eliminar ticket:', err)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
-    <main className="min-vh-100 d-flex flex-column bg-secondary bg-opacity-50">
-      {/* Header rojo superior */}
-      <div className="bg-danger py-3">
-        <div className="container-fluid w-100 d-flex justify-content-end">
-          <button
-            type="button"
-            className="btn btn-light btn-sm px-4"
-            onClick={() => setShowFinished((current) => !current)}
-            disabled={status === 'loading'}
-          >
-            {status === 'loading'
-              ? 'Cargando…'
-              : 'Ver Historial'}
-          </button>
-        </div>
-      </div>
+    <main className="min-vh-100 d-flex flex-column">
+      <MenuHeader
+        showFinished={showFinished}
+        isLoading={status === 'loading'}
+        onToggleHistory={() => setShowFinished((current) => !current)}
+      />
 
-      {/* Separación entre header y columnas */}
-      <div className="py-3"></div>
-
-      <div className="container-fluid flex-grow-1 pb-3">
+      <div className="container-fluid flex-grow-1 pb-4">
         <div className="row g-3 px-3">
           {columns.map((column) => (
-            <div key={column.id} className="col-12 col-sm-6 col-lg-3">
-              <section className="h-100 bg-white border border-2 border-danger rounded-3 p-3">
-                <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
-                  <button
-                    type="button"
-                    className="btn btn-danger text-truncate px-3 py-2"
-                    disabled
-                    style={{ cursor: 'default' }}
-                  >
-                    {column.title}
-                  </button>
-
-                  <Link to={`/crearticket?columna=${column.id}`} className="btn btn-primary btn-sm">
-                    Nuevo
-                  </Link>
-                </div>
-
-                <div className="d-flex flex-column gap-2">
-                  {column.id === 1 && status === 'loading' && (
-                    <span className="small text-secondary">Cargando tickets…</span>
-                  )}
-                  {column.id === 1 && status === 'failed' && (
-                    <span className="small text-danger">{error}</span>
-                  )}
-                  {visibleTickets
-                    .filter((ticket) => Number(ticket.columnId) === Number(column.id))
-                    .map((ticket) => {
-                      const card: TicketCard = {
-                        id: String(ticket.id),
-                        title: ticket.titulo,
-                        user: ticket.colaborador || ticket.creadoPor,
-                        date: new Date(ticket.fechaCreacion).toLocaleDateString('es-AR'),
-                        description: ticket.descripcion,
-                        frequency: ticket.frecuencia
-                          ? `Cada ${ticket.frecuencia.numero} ${ticket.frecuencia.periodo.toLowerCase()}`
-                          : undefined,
-                      }
-
-                      return (
-                        <Card
-                          key={card.id}
-                          card={card}
-                          onClick={() => openTicket(card.id)}
-                          onViewMore={() => handleViewMore(ticket)}
-                        />
-                      )
-                    })}
-                  {status === 'succeeded' && visibleTickets.filter((ticket) => Number(ticket.columnId) === Number(column.id)).length === 0 && (
-                    <span className="small text-secondary">
-                      {showFinished ? 'No hay tickets terminados.' : 'No hay tickets para mostrar.'}
-                    </span>
-                  )}
-                </div>
-              </section>
-            </div>
+            <BoardColumn
+              key={column.id}
+              column={column}
+              tickets={visibleTickets.filter((ticket) => Number(ticket.columnId) === Number(column.id))}
+              isLoading={status === 'loading'}
+              errorMessage={error}
+              showFinished={showFinished}
+              onCreateTicket={openCreateModal}
+              onEditTicket={(ticket) => openDetailModal({ ticket, isEditing: true })}
+              onViewTicket={(ticket) => openDetailModal({ ticket, isEditing: false })}
+              onDeleteTicket={openDeleteModal}
+            />
           ))}
         </div>
       </div>
 
+      {/* Modal de Detalle / Edición / Reactivación */}
       <ModalTicket
-        ticket={selectedDetailTicket}
+        ticket={detailModalData?.ticket ?? null}
         isOpen={isDetailOpen}
-        onClose={handleCloseDetail}
+        initialEditing={detailModalData?.isEditing ?? false}
+        onClose={closeDetailModal}
         onTicketUpdated={handleTicketUpdated}
-        onEditTicket={handleEditFromModal}
+        onDelete={(ticket) => openDeleteModal(ticket)}
+      />
+
+      {/* Modal de Creación de Ticket para Soporte */}
+      <TicketCreator
+        isOpen={isCreateOpen}
+        initialColumna={createColumnId ?? 1}
+        onClose={closeCreateModal}
+        onSuccess={handleTicketCreated}
+      />
+
+      {/* Modal de Confirmación de Eliminación */}
+      <ModalConfirmarEliminar
+        isOpen={isDeleteOpen}
+        ticketTitulo={ticketToDelete?.titulo}
+        ticketIdentificador={ticketToDelete?.identificador || (ticketToDelete ? `TK-${ticketToDelete.id}` : undefined)}
+        isDeleting={isDeleting}
+        onCancel={closeDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </main>
   )
 }
+
+

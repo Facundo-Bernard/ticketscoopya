@@ -1,66 +1,79 @@
+import CardActionsMenu from './CardActionsMenu'
+import { getInitials, getPriorityBadge } from './cardUtils'
+
 export type TicketCard = {
   id: string
   title: string
   user: string
   date: string
   description: string
+  priority?: string
   frequency?: string
 }
 
 export default function Card({ 
   card, 
   onClick, 
-  onViewMore 
+  onViewMore,
+  onDelete
 }: { 
   card: TicketCard; 
   onClick: () => void; 
   onViewMore?: () => void;
+  onDelete?: () => void;
 }) {
   return (
-    <div className="card border-2 border-dark shadow-sm text-start w-100">
-      <div className="card-body p-3">
-        {/* Parte superior: título y usuario (izquierda), fecha y lápiz (derecha) */}
-        <div className="d-flex justify-content-between align-items-start mb-3">
-          {/* Izquierda: título + usuario */}
-          <div className="d-flex align-items-center gap-2">
-            <span className="fs-4">👤</span>
-            <div>
-              <h3 className="h6 mb-0 fw-bold">{card.title}</h3>
-              <small className="text-secondary">{card.user}</small>
-            </div>
-          </div>
-
-          {/* Derecha: fecha + lápiz */}
-          <div className="d-flex align-items-center gap-2">
-            <small className="text-secondary">{card.date}</small>
-            <button
-              type="button"
-              className="btn btn-sm p-1"
-              onClick={onClick}
-              aria-label={`Editar ${card.title}`}
-            >
-              ✏️
-            </button>
-          </div>
+    <div className="ticket-card p-3 text-start w-100">
+      {/* Encabezado: ID + Prioridad (izq) y Fecha + Menú 3 Puntos (der) */}
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <div className="d-flex align-items-center gap-2">
+          <span className="badge bg-light text-secondary border rounded-2 fw-semibold">
+            {card.id}
+          </span>
+          {getPriorityBadge(card.priority)}
         </div>
 
-        {/* Centro: descripción */}
-        <p className="small text-secondary mb-3">{card.description}</p>
+        <div className="d-flex align-items-center gap-2">
+          <small className="text-secondary">{card.date}</small>
+          <CardActionsMenu
+            ticketTitle={card.title}
+            onEdit={onClick}
+            onDelete={onDelete}
+          />
+        </div>
+      </div>
 
-        {/* Parte inferior: frecuencia + botón ver más */}
-        <div className="d-flex justify-content-between align-items-center">
-          {/* Izquierda: frecuencia con icono de reloj */}
+      {/* Título del Ticket */}
+      <h6 className="fw-bold text-dark mb-1 lh-sm">{card.title}</h6>
+
+      {/* Descripción (2 líneas) */}
+      <p className="small text-secondary mb-3 line-clamp-2">{card.description}</p>
+
+      {/* Pie de tarjeta: Usuario asignado (izq) y Frecuencia / Ver más (der) */}
+      <div className="d-flex justify-content-between align-items-center pt-2 border-top border-light">
+        <div className="d-flex align-items-center gap-2">
+          <div className="avatar-circle" title={card.user}>
+            {getInitials(card.user)}
+          </div>
+          <span className="small text-dark fw-medium text-truncate truncate-name">
+            {card.user}
+          </span>
+        </div>
+
+        <div className="d-flex align-items-center gap-2">
           {card.frequency && (
-            <div className="d-flex align-items-center gap-2 small text-secondary">
-              <span>🕐</span>
+            <div className="d-flex align-items-center gap-1 badge bg-light text-secondary border fw-normal py-1 px-2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
               <span>{card.frequency}</span>
             </div>
           )}
 
-          {/* Derecha: botón ver más pequeño */}
           <button
             type="button"
-            className="btn btn-primary btn-sm"
+            className="btn-view-ticket"
             onClick={(e) => {
               e.stopPropagation()
               onViewMore?.()
@@ -73,3 +86,5 @@ export default function Card({
     </div>
   )
 }
+
+
