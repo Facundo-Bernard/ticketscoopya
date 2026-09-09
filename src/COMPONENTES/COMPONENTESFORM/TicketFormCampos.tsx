@@ -24,6 +24,7 @@ export interface TicketFormCamposProps {
   showEstado?: boolean;
   showEmail?: boolean;
   emailReadonly?: boolean;
+  hasStoredEmail?: boolean;
   showPrioridad?: boolean;
 }
 
@@ -36,6 +37,7 @@ export const TicketFormCampos: React.FC<TicketFormCamposProps> = ({
   showEstado = true,
   showEmail = false,
   emailReadonly = false,
+  hasStoredEmail = false,
   showPrioridad = true
 }) => {
   const { estados, prioridades, asignables, isLoading } = useCatalogs();
@@ -96,20 +98,32 @@ export const TicketFormCampos: React.FC<TicketFormCamposProps> = ({
       {/* Fila 2: Email (opcional, para creadores de ticket o readonly) */}
       {showEmail && (
         <div className="mb-3">
-          <label className="form-label-coopya">
-            Email del solicitante (Obligatorio)
-          </label>
-          <input
-            type="email"
-            className="form-control"
-            name="email"
-            value={emailValue}
-            onChange={onChange}
-            placeholder="ejemplo@coopya.com"
-            required
-            disabled={isSaving || emailReadonly}
-            readOnly={emailReadonly}
-          />
+          {hasStoredEmail && emailValue ? (
+            <div className="p-3 bg-light rounded-3 border d-flex align-items-center gap-3">
+              <i className="bi bi-person-check-fill text-primary fs-4"></i>
+              <div>
+                <span className="small text-muted d-block">Solicitante</span>
+                <span className="fw-semibold text-dark">{emailValue}</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <label className="form-label-coopya">
+                Email del solicitante (Obligatorio)
+              </label>
+              <input
+                type="email"
+                className="form-control"
+                name="email"
+                value={emailValue}
+                onChange={onChange}
+                placeholder="ejemplo@coopya.com"
+                required
+                disabled={isSaving || emailReadonly}
+                readOnly={emailReadonly}
+              />
+            </>
+          )}
         </div>
       )}
 

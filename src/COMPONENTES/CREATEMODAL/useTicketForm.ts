@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ticketService } from '../../SERVICES/ticketService';
+import { getClientEmail, setClientEmail } from '../../UTILS/storageUtils';
 import type { Ticket, Frecuencia } from '../../TYPES';
 
 export interface TicketData {
@@ -27,16 +28,16 @@ export function useTicketForm(
   const initialCol = typeof options === 'number' ? options : (options?.initialColumna || 1);
   const onSuccess = typeof options === 'object' && options !== null ? options.onSuccess : onSuccessCallback;
 
-  const [ticketData, setTicketData] = useState<TicketData>({
+  const [ticketData, setTicketData] = useState<TicketData>(() => ({
     titulo: '',
     descripcion: '',
-    email: '',
+    email: isUser ? (getClientEmail() || '') : '',
     asignar: '',
     prioridad: 'media',
     imagenes: [],
     columna: isUser ? 1 : (initialCol || 1),
     frecuencia: undefined
-  });
+  }));
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -110,7 +111,7 @@ export function useTicketForm(
     setTicketData({
       titulo: '',
       descripcion: '',
-      email: '',
+      email: isUser ? (getClientEmail() || '') : '',
       asignar: '',
       prioridad: 'media',
       imagenes: [],
@@ -140,17 +141,22 @@ export function useTicketForm(
         frecuencia: isUser ? undefined : ticketData.frecuencia,
       });
 
+      // Si es cliente, persistir el email en LocalStorage para futuras visitas
+      if (isUser && ticketData.email) {
+        setClientEmail(ticketData.email);
+      }
+
       setSuccessMessage(
         isUser
           ? `¡Ticket creado con éxito! Tu número de seguimiento es: ${nuevoTicket.identificador || nuevoTicket.id}`
           : `¡Ticket creado con éxito! Identificador: ${nuevoTicket.identificador || nuevoTicket.id}`
       );
       
-      // Limpiar formulario después del envío exitoso
+      // Limpiar formulario después del envío exitoso (manteniendo el email del cliente)
       setTicketData({
         titulo: '',
         descripcion: '',
-        email: '',
+        email: isUser ? (getClientEmail() || ticketData.email || '') : '',
         asignar: '',
         prioridad: 'media',
         imagenes: [],
@@ -194,6 +200,7 @@ export function useTicketForm(
     isSubmitting,
     errorMessage,
     successMessage,
+    hasStoredEmail: isUser && Boolean(getClientEmail()),
     handleInputChange,
     handleImageUpload,
     handleRemoveImage,

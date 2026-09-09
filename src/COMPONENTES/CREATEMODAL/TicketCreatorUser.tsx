@@ -8,6 +8,7 @@ export function TicketCreatorUser() {
     isSubmitting,
     errorMessage,
     successMessage,
+    hasStoredEmail,
     handleInputChange,
     handleImageUpload,
     handleRemoveImage,
@@ -29,7 +30,7 @@ export function TicketCreatorUser() {
               <div className="portal-success-icon-box">✓</div>
               <h3 className="fw-bold mb-2 text-dark">¡Solicitud Enviada con Éxito!</h3>
               <p className="text-secondary mb-4">
-                Hemos registrado tu ticket en nuestro sistema. El equipo técnico lo revisará y te contactará a la brevedad.
+                Hemos registrado el problema en nuestro sistema. El equipo técnico lo revisará y te contactará a la brevedad.
               </p>
 
               {trackingId && (
@@ -83,6 +84,7 @@ export function TicketCreatorUser() {
                     showColumna={false}
                     showEstado={false}
                     showEmail={true}
+                    hasStoredEmail={hasStoredEmail}
                     showPrioridad={false}
                   />
 
