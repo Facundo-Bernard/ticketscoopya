@@ -1,3 +1,0 @@
-se llama edit modal, pero asimismo tiene que poder permitir ver la informacion
-la idea seria poder ver el modal y con el boton luego poder editarlo, estarian los 2 en uno
-asi los 3 podemos trabajar en 3 apartados
