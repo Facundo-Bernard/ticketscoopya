@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { Ticket } from '../COMPONENTES/EDITMODAL/types'
+import type { Ticket } from '../TYPES'
 import { ticketService } from '../SERVICES/ticketService'
 
 type StoredTicket = Ticket & { columnId: number }
@@ -62,6 +62,18 @@ export const saveTicket = createAsyncThunk<Ticket, Ticket, { rejectValue: string
         ...updatedTicket,
         columnId: updatedTicket.columnId || ticket.columnId,
       }
+    } catch (error) {
+      return rejectWithValue(messageFromError(error))
+    }
+  },
+)
+
+export const deleteTicket = createAsyncThunk<string | number, string | number, { rejectValue: string }>(
+  'tickets/deleteTicket',
+  async (ticketId, { rejectWithValue }) => {
+    try {
+      await ticketService.deleteTicket(ticketId)
+      return ticketId
     } catch (error) {
       return rejectWithValue(messageFromError(error))
     }
@@ -164,6 +176,12 @@ const ticketsSlice = createSlice({
       })
       .addCase(saveTicket.rejected, (state, action) => {
         state.error = action.payload ?? 'No se pudieron guardar los cambios.'
+      })
+      .addCase(deleteTicket.fulfilled, (state, action) => {
+        state.items = state.items.filter((ticket) => String(ticket.id) !== String(action.payload))
+      })
+      .addCase(deleteTicket.rejected, (state, action) => {
+        state.error = action.payload ?? 'No se pudo eliminar el ticket.'
       })
   },
 })

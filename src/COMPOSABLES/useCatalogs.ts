@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { catalogService } from '../SERVICES/catalogService';
-import type { OptionItem } from '../COMPONENTES/EDITMODAL/types';
+import type { OptionItem } from '../TYPES';
 
 export function useCatalogs(autoLoad: boolean = true) {
   const [estados, setEstados] = useState<OptionItem[]>([]);

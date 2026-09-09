@@ -1,5 +1,5 @@
 import { api, getFileUrl } from './api';
-import type { Ticket } from '../COMPONENTES/EDITMODAL/types';
+import type { Ticket } from '../TYPES';
 
 export interface BackendTicketResponse {
   id: string;

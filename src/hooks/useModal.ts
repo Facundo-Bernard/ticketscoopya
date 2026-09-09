@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-interface UseModalReturn<T> {
+export interface UseModalReturn<T> {
   isOpen: boolean;
   selectedData: T | null;
   openModal: (data?: T | null) => void;
@@ -28,3 +28,5 @@ export const useModal = <T = unknown>(initialState: boolean = false): UseModalRe
     closeModal,
   };
 };
+
+export default useModal;

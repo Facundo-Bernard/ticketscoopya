@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { OptionItem } from '../COMPONENTES/EDITMODAL/types';
+import type { OptionItem } from '../TYPES';
 
 type CatalogPayload =
   | OptionItem[]
