@@ -65,8 +65,15 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
             const card: TicketCard = {
               id: String(ticket.identificador || `TK-${ticket.id}`),
               title: ticket.titulo,
-              user: ticket.colaborador || ticket.creadoPor,
-              date: new Date(ticket.fechaCreacion).toLocaleDateString('es-AR'),
+              user: ticket.colaborador && ticket.colaborador.trim() ? ticket.colaborador.trim() : 'Sin Asignar',
+              date: ticket.fechaCreacion
+                ? (() => {
+                    const d = new Date(ticket.fechaCreacion);
+                    return isNaN(d.getTime())
+                      ? ''
+                      : d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                  })()
+                : '',
               description: ticket.descripcion,
               priority: ticket.prioridad,
               frequency: ticket.frecuencia

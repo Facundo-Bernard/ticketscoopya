@@ -49,8 +49,14 @@ export default function Menu() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const visibleTickets = showFinished
-    ? tickets.filter((ticket) => ticket.estado === 'resuelto' || ticket.estado === 'cerrado')
-    : tickets
+    ? tickets.filter((ticket) => {
+        const estado = (ticket.estado || 'abierto').toLowerCase();
+        return estado === 'resuelto' || estado === 'cerrado';
+      })
+    : tickets.filter((ticket) => {
+        const estado = (ticket.estado || 'abierto').toLowerCase();
+        return estado !== 'resuelto' && estado !== 'cerrado';
+      });
 
   useEffect(() => {
     if (status === 'idle') {

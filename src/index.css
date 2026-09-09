@@ -32,6 +32,7 @@ body {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background-color: #ffffff;
+  cursor: pointer;
 }
 
 .ticket-card:hover {
@@ -53,6 +54,12 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+.avatar-circle.avatar-unassigned {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  border: 1px dashed #cbd5e1;
 }
 
 /* Botón sutil con icono (ej. lápiz de edición) */
@@ -103,7 +110,7 @@ body {
 
 /* Limitador de ancho para nombres de usuario */
 .truncate-name {
-  max-width: 110px;
+  max-width: 145px;
 }
 
 /* Marca Coopya y encabezados */
@@ -241,6 +248,15 @@ body {
 
 .modal-confirm-wrapper {
   z-index: 1070;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-backdrop-custom {
+  z-index: 1040;
+}
+
+.modal-wrapper-custom {
+  z-index: 1050;
   background-color: rgba(0, 0, 0, 0.5);
 }
 
@@ -413,4 +429,20 @@ body {
 .footer-created-by {
   font-size: 13px;
   color: #64748b;
+}
+
+.pre-wrap-text {
+  white-space: pre-wrap;
+}
+
+.ticket-detail-attachment {
+  max-height: 180px;
+  max-width: 220px;
+  object-fit: cover;
+  cursor: pointer;
+  background-color: #f8fafc;
+}
+
+.badge-zoom {
+  font-size: 11px;
 }

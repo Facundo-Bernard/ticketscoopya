@@ -3,8 +3,8 @@ import {
   TICKET_STATE_COLORS, 
   PRIORIDAD_COLORS, 
   formatCatalogLabel 
-} from './ticketStates';
-import { type Ticket, TICKET_COLUMNS } from '../../TYPES';
+} from '../../TICKETMENU/ticketStates';
+import { type Ticket, TICKET_COLUMNS } from '../../../TYPES';
 
 interface TicketDetalleProps {
   ticket: Ticket | null;
@@ -50,9 +50,20 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
           </span>
         )}
 
-        {ticket.colaborador && (
+        {ticket.colaborador && ticket.colaborador.trim() ? (
           <span className="badge bg-light text-dark border">
             <i className="bi bi-person-fill text-info me-1"></i> {ticket.colaborador}
+          </span>
+        ) : (
+          <span className="badge bg-light text-secondary border">
+            <i className="bi bi-person me-1"></i> Sin Asignar
+          </span>
+        )}
+
+        {ticket.fechaCreacion && (
+          <span className="badge bg-light text-secondary border">
+            <i className="bi bi-calendar3 me-1"></i>
+            {new Date(ticket.fechaCreacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
           </span>
         )}
 
@@ -66,7 +77,7 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
 
       <div className="mb-3">
         <strong>Descripción:</strong>
-        <p className="mt-2" style={{ whiteSpace: 'pre-wrap' }}>
+        <p className="mt-2 pre-wrap-text text-break">
           {ticket.descripcion}
         </p>
       </div>
@@ -87,22 +98,12 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
                 <img 
                   src={img} 
                   alt={`Adjunto ${idx + 1}`} 
-                  className="img-fluid rounded border shadow-sm" 
-                  style={{ 
-                    maxHeight: '180px', 
-                    maxWidth: '220px', 
-                    objectFit: 'cover', 
-                    cursor: 'pointer',
-                    backgroundColor: '#f8f9fa'
-                  }}
+                  className="img-fluid rounded border shadow-sm ticket-detail-attachment" 
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.opacity = '0.5';
+                    (e.currentTarget as HTMLImageElement).classList.add('opacity-50');
                   }}
                 />
-                <span 
-                  className="badge bg-dark bg-opacity-75 position-absolute bottom-0 end-0 m-1"
-                  style={{ fontSize: '11px' }}
-                >
+                <span className="badge bg-dark bg-opacity-75 position-absolute bottom-0 end-0 m-1 badge-zoom">
                   🔍 Ampliar
                 </span>
               </a>

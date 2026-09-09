@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Ticket, Frecuencia } from '../../TYPES';
+import type { Ticket, Frecuencia } from '../../../TYPES';
 
 export interface TicketEditFormData {
   titulo: string;

@@ -56,7 +56,7 @@ export const TicketFormCampos: React.FC<TicketFormCamposProps> = ({
       <div className="row mb-3 align-items-end">
         <div className={showAsignar ? 'col-md-8' : 'col-12'}>
           <label className="form-label-coopya">
-            Título del ticket
+            Título
           </label>
           <input
             type="text"
@@ -97,7 +97,7 @@ export const TicketFormCampos: React.FC<TicketFormCamposProps> = ({
       {showEmail && (
         <div className="mb-3">
           <label className="form-label-coopya">
-            Email del solicitante
+            Email del solicitante (Obligatorio)
           </label>
           <input
             type="email"

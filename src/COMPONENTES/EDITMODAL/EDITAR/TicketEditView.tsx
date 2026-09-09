@@ -1,13 +1,13 @@
 import React from 'react';
 import { Alert } from 'react-bootstrap';
-import type { Ticket } from '../../TYPES';
+import type { Ticket } from '../../../TYPES';
 import { useTicketEdit } from './useTicketEdit';
 import {
   TicketFormCampos,
   TicketFormImagenes,
   TicketFrecuencia,
   TicketFormFooter
-} from '../COMPONENTESFORM';
+} from '../../COMPONENTESFORM';
 
 export interface TicketEditViewProps {
   ticket: Ticket;
@@ -35,35 +35,18 @@ export const TicketEditView: React.FC<TicketEditViewProps> = ({
 
   return (
     <>
-      <div className="modal-header d-flex justify-content-between align-items-center py-3 bg-white">
-        <h5 className="modal-title fw-bold mb-0" style={{ color: '#002B5E' }}>
-          Edición de Ticket
+      <div className="modal-header d-flex justify-content-between align-items-center py-3 bg-white border-bottom">
+        <h5 className="modal-title fw-bold mb-0 text-dark">
+          Editar Ticket {ticket.identificador ? `(${ticket.identificador})` : ''}
         </h5>
-        <button
-          type="button"
-          className="btn-close"
-          onClick={onCancel}
-          disabled={isSaving}
-          aria-label="Cerrar"
-        ></button>
+        <button type="button" className="btn-close" onClick={onCancel} aria-label="Cerrar"></button>
       </div>
 
       <div className="modal-body p-4">
-        {errorMessage && <Alert variant="danger" dismissible>{errorMessage}</Alert>}
-
-        {creatorEmail && (
-          <div className="mb-3">
-            <label className="form-label mb-1 fw-bold" style={{ color: '#002B5E', fontSize: '14px' }}>
-              Correo de quien lo generó
-            </label>
-            <input
-              type="email"
-              className="form-control"
-              value={creatorEmail}
-              readOnly
-              disabled
-            />
-          </div>
+        {errorMessage && (
+          <Alert variant="danger" dismissible>
+            {errorMessage}
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit}>
@@ -74,8 +57,8 @@ export const TicketEditView: React.FC<TicketEditViewProps> = ({
             showAsignar={true}
             showColumna={true}
             showEstado={true}
-            showEmail={false}
             showPrioridad={true}
+            showEmail={false}
           />
 
           {Number(formData.columnId) === 4 && (
