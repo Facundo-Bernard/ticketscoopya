@@ -1,16 +1,16 @@
-import { Route, Routes } from 'react-router-dom'
-import { TicketCreator } from '../COMPONENTES/CREATEMODAL'
+import { Route, Routes, Navigate } from 'react-router-dom'
+import { TicketCreatorUser } from '../COMPONENTES/CREATEMODAL'
 import TicketMenu from '../COMPONENTES/TICKETMENU/MENU'
-import EditarTicket from '../COMPONENTES/TICKETMENU/EditarTicket'
 // Aquí irán las rutas de la app
 
 function RUTASNAV() {
 
   return (
     <Routes>
-      <Route path="/crearticket" element={<TicketCreator />} />
       <Route path="/" element={<TicketMenu />} />
-      <Route path="/editar-ticket/:ticketId" element={<EditarTicket />} />
+      <Route path="/crearticket" element={<Navigate to="/" replace />} />
+      <Route path="/crearticket-usuario" element={<TicketCreatorUser />} />
+      <Route path="/editar-ticket/:ticketId" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

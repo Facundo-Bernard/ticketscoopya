@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ticketService } from '../../SERVICES/ticketService';
-import type { Ticket } from '../EDITMODAL/types';
+import type { Ticket, Frecuencia } from '../../TYPES';
 
 export interface TicketData {
   titulo: string;
@@ -10,9 +10,23 @@ export interface TicketData {
   prioridad: string;
   imagenes: File[];
   columna: number;
+  frecuencia?: Frecuencia;
 }
 
-export function useTicketForm(initialColumna?: number, onSuccess?: (ticket: Ticket) => void) {
+export interface UseTicketFormOptions {
+  initialColumna?: number;
+  isUser?: boolean;
+  onSuccess?: (ticket: Ticket) => void;
+}
+
+export function useTicketForm(
+  options?: number | UseTicketFormOptions,
+  onSuccessCallback?: (ticket: Ticket) => void
+) {
+  const isUser = typeof options === 'object' && options !== null ? !!options.isUser : false;
+  const initialCol = typeof options === 'number' ? options : (options?.initialColumna || 1);
+  const onSuccess = typeof options === 'object' && options !== null ? options.onSuccess : onSuccessCallback;
+
   const [ticketData, setTicketData] = useState<TicketData>({
     titulo: '',
     descripcion: '',
@@ -20,17 +34,30 @@ export function useTicketForm(initialColumna?: number, onSuccess?: (ticket: Tick
     asignar: '',
     prioridad: 'media',
     imagenes: [],
-    columna: initialColumna || 1
+    columna: isUser ? 1 : (initialCol || 1),
+    frecuencia: undefined
   });
+
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Sincronizar columna inicial si cambia (al abrir modal desde otra columna)
+  useEffect(() => {
+    if (!isUser && initialCol) {
+      setTicketData((prev) => ({
+        ...prev,
+        columna: initialCol
+      }));
+    }
+  }, [initialCol, isUser]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    const targetKey = name === 'colaborador' ? 'asignar' : name === 'columnId' ? 'columna' : name;
     setTicketData((prev) => ({
       ...prev,
-      [name]: value
+      [targetKey]: targetKey === 'columna' ? Number(value) : value
     }));
   };
 
@@ -72,6 +99,28 @@ export function useTicketForm(initialColumna?: number, onSuccess?: (ticket: Tick
     }));
   };
 
+  const handleFrecuenciaChange = (frecuencia: Frecuencia | undefined) => {
+    setTicketData((prev) => ({
+      ...prev,
+      frecuencia
+    }));
+  };
+
+  const resetForm = (newColumna?: number) => {
+    setTicketData({
+      titulo: '',
+      descripcion: '',
+      email: '',
+      asignar: '',
+      prioridad: 'media',
+      imagenes: [],
+      columna: isUser ? 1 : (newColumna ?? (initialCol || 1)),
+      frecuencia: undefined
+    });
+    setErrorMessage(null);
+    setSuccessMessage(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -83,14 +132,19 @@ export function useTicketForm(initialColumna?: number, onSuccess?: (ticket: Tick
         titulo: ticketData.titulo,
         descripcion: ticketData.descripcion,
         correo: ticketData.email,
-        prioridad: ticketData.prioridad,
-        asignar: ticketData.asignar || undefined,
+        prioridad: isUser ? 'media' : ticketData.prioridad,
+        asignar: isUser ? undefined : (ticketData.asignar || undefined),
         files: ticketData.imagenes,
-        columnId: ticketData.columna,
-        columna: ticketData.columna,
+        columnId: isUser ? 1 : ticketData.columna,
+        columna: isUser ? 1 : ticketData.columna,
+        frecuencia: isUser ? undefined : ticketData.frecuencia,
       });
 
-      setSuccessMessage(`¡Ticket creado con éxito! Identificador: ${nuevoTicket.identificador || nuevoTicket.id}`);
+      setSuccessMessage(
+        isUser
+          ? `¡Ticket creado con éxito! Tu número de seguimiento es: ${nuevoTicket.identificador || nuevoTicket.id}`
+          : `¡Ticket creado con éxito! Identificador: ${nuevoTicket.identificador || nuevoTicket.id}`
+      );
       
       // Limpiar formulario después del envío exitoso
       setTicketData({
@@ -100,7 +154,8 @@ export function useTicketForm(initialColumna?: number, onSuccess?: (ticket: Tick
         asignar: '',
         prioridad: 'media',
         imagenes: [],
-        columna: initialColumna || 1
+        columna: isUser ? 1 : (initialCol || 1),
+        frecuencia: undefined
       });
 
       if (onSuccess) {
@@ -119,7 +174,7 @@ export function useTicketForm(initialColumna?: number, onSuccess?: (ticket: Tick
               const field = item.loc ? item.loc[item.loc.length - 1] : '';
               return `${field ? field + ': ' : ''}${item.msg}`;
             })
-            .join(' | ');
+            .join(', ');
         }
       }
 
@@ -145,6 +200,8 @@ export function useTicketForm(initialColumna?: number, onSuccess?: (ticket: Tick
     handleAsignarChange,
     handlePrioridadChange,
     handleColumnaChange,
+    handleFrecuenciaChange,
+    resetForm,
     handleSubmit,
     handleVolver
   };
