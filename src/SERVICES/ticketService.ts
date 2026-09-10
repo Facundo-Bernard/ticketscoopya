@@ -209,5 +209,23 @@ export const ticketService = {
   // Eliminar una imagen específica de un ticket
   async deleteTicketImage(ticketId: string | number, fileId: string): Promise<void> {
     await api.delete(`/tickets/${ticketId}/images/${fileId}`);
+  },
+
+  // Bloquear ticket para edición exclusiva (concurrencia)
+  async lockTicket(id: string | number, usuario: string): Promise<{ status: string; ticket_id: string; usuario: string; expira_en_segundos: number }> {
+    const response = await api.post(`/tickets/${id}/bloquear`, { usuario });
+    return response.data;
+  },
+
+  // Liberar bloqueo de edición de un ticket
+  async unlockTicket(id: string | number, usuario?: string): Promise<{ status: string; ticket_id: string }> {
+    const response = await api.post(`/tickets/${id}/desbloquear`, usuario ? { usuario } : {});
+    return response.data;
+  },
+
+  // Consultar estado de bloqueo de un ticket
+  async getLockStatus(id: string | number): Promise<{ bloqueado: boolean; usuario?: string; expira_en?: string }> {
+    const response = await api.get(`/tickets/${id}/bloqueo`);
+    return response.data;
   }
 };

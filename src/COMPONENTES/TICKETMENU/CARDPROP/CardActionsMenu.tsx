@@ -4,12 +4,16 @@ export interface CardActionsMenuProps {
   ticketTitle: string;
   onEdit: () => void;
   onDelete?: () => void;
+  isLockedByOther?: boolean;
+  lockedBy?: string;
 }
 
 export const CardActionsMenu: React.FC<CardActionsMenuProps> = ({
   ticketTitle,
   onEdit,
   onDelete,
+  isLockedByOther = false,
+  lockedBy,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -58,12 +62,14 @@ export const CardActionsMenu: React.FC<CardActionsMenuProps> = ({
         <div className="card-menu-dropdown">
           <button
             type="button"
-            className="card-menu-item"
+            className={`card-menu-item ${isLockedByOther ? 'opacity-50 text-muted' : ''}`}
             onClick={(e) => {
               e.stopPropagation();
+              if (isLockedByOther) return;
               setMenuOpen(false);
               onEdit();
             }}
+            title={isLockedByOther ? `Bloqueado para edición por ${lockedBy}` : undefined}
           >
             <svg
               width="14"
@@ -77,17 +83,19 @@ export const CardActionsMenu: React.FC<CardActionsMenuProps> = ({
             >
               <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
             </svg>
-            <span>Editar</span>
+            <span>{isLockedByOther ? '🔒 En edición' : 'Editar'}</span>
           </button>
 
           <button
             type="button"
-            className="card-menu-item danger"
+            className={`card-menu-item danger ${isLockedByOther ? 'opacity-50 text-muted' : ''}`}
             onClick={(e) => {
               e.stopPropagation();
+              if (isLockedByOther) return;
               setMenuOpen(false);
               onDelete?.();
             }}
+            title={isLockedByOther ? `No se puede eliminar: en edición por ${lockedBy}` : undefined}
           >
             <svg
               width="14"
@@ -102,7 +110,7 @@ export const CardActionsMenu: React.FC<CardActionsMenuProps> = ({
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
             </svg>
-            <span>Eliminar</span>
+            <span>{isLockedByOther ? '🔒 Bloqueado' : 'Eliminar'}</span>
           </button>
         </div>
       )}

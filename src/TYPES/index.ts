@@ -42,3 +42,10 @@ export interface OptionItem {
   value: string;
   label: string;
 }
+
+export interface TicketLock {
+  ticketId: string;
+  identificador?: string;
+  usuario: string;
+  expiraEnSegundos?: number;
+}

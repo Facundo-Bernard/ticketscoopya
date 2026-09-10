@@ -7,6 +7,8 @@ export interface ModalTicketOperationsProps {
   initialEditing?: boolean;
   onClose: () => void;
   onTicketUpdated?: (ticket: Ticket) => void | Promise<void>;
+  onLock?: (ticket: Ticket) => Promise<boolean>;
+  onUnlock?: (ticket: Ticket) => Promise<void>;
 }
 
 export function useModalTicketOperations({
@@ -15,34 +17,94 @@ export function useModalTicketOperations({
   initialEditing = false,
   onClose,
   onTicketUpdated,
+  onLock,
+  onUnlock,
 }: ModalTicketOperationsProps) {
-  const [isEditing, setIsEditing] = useState<boolean>(initialEditing);
-
-  useEffect(() => {
-    if (isOpen) {
-      setIsEditing(initialEditing);
-    }
-  }, [isOpen, initialEditing]);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [lockError, setLockError] = useState<string | null>(null);
+  const [isLocking, setIsLocking] = useState<boolean>(false);
 
   const isTerminado = ticket?.estado === 'cerrado' || ticket?.estado === 'resuelto';
 
-  const toggleEditMode = (editing: boolean): void => {
-    startTransition(() => {
-      setIsEditing(editing);
-    });
+  const requestLockAndEdit = async (): Promise<boolean> => {
+    if (!ticket) return false;
+    setLockError(null);
+    setIsLocking(true);
+    try {
+      if (onLock) {
+        const success = await onLock(ticket);
+        if (!success) {
+          setLockError('El ticket está siendo editado por otro usuario.');
+          return false;
+        }
+      }
+      startTransition(() => {
+        setIsEditing(true);
+      });
+      return true;
+    } catch (err: any) {
+      const detail = typeof err === 'string' ? err : 'El ticket está siendo editado por otro usuario.';
+      setLockError(detail);
+      return false;
+    } finally {
+      setIsLocking(false);
+    }
   };
 
-  const handleCancelEdit = (): void => {
+  const releaseLock = async (): Promise<void> => {
+    if (!ticket || !onUnlock) return;
+    try {
+      await onUnlock(ticket);
+    } catch {
+      // Ignorar errores al liberar lock
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setLockError(null);
+      if (initialEditing) {
+        requestLockAndEdit();
+      } else {
+        setIsEditing(false);
+      }
+    } else {
+      setIsEditing(false);
+      setLockError(null);
+    }
+  }, [isOpen, initialEditing, ticket?.id]);
+
+  const toggleEditMode = async (editing: boolean): Promise<void> => {
+    if (editing) {
+      await requestLockAndEdit();
+    } else {
+      await releaseLock();
+      startTransition(() => {
+        setIsEditing(false);
+      });
+    }
+  };
+
+  const handleCancelEdit = async (): Promise<void> => {
+    await releaseLock();
     if (initialEditing) {
       onClose();
     } else {
-      toggleEditMode(false);
+      setIsEditing(false);
     }
   };
 
   const handleSave = async (ticketModificado: Ticket): Promise<void> => {
     await onTicketUpdated?.(ticketModificado);
-    toggleEditMode(false);
+    // Nota: El backend libera el bloqueo automáticamente al guardar la actualización y emite ticket_desbloqueado
+    setIsEditing(false);
+    onClose();
+  };
+
+  const handleModalClose = async (): Promise<void> => {
+    if (isEditing) {
+      await releaseLock();
+    }
     onClose();
   };
 
@@ -57,12 +119,20 @@ export function useModalTicketOperations({
     onClose();
   };
 
+  const clearLockError = () => {
+    setLockError(null);
+  };
+
   return {
     isEditing,
     isTerminado,
+    lockError,
+    isLocking,
+    clearLockError,
     toggleEditMode,
     handleCancelEdit,
     handleSave,
+    handleModalClose,
     handleReactivar,
   };
 }

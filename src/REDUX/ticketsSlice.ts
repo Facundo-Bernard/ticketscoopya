@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { Ticket } from '../TYPES'
+import type { Ticket, TicketLock } from '../TYPES'
 import { ticketService } from '../SERVICES/ticketService'
 
 type StoredTicket = Ticket & { columnId: number }
@@ -9,6 +9,7 @@ type TicketsState = {
   selectedTicketId: string | null
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
+  locks: Record<string, TicketLock>
 }
 
 const initialState: TicketsState = {
@@ -16,6 +17,7 @@ const initialState: TicketsState = {
   selectedTicketId: null,
   status: 'idle',
   error: null,
+  locks: {},
 }
 
 const messageFromError = (error: unknown) =>
@@ -91,6 +93,43 @@ export const markTicketAsRead = createAsyncThunk<Ticket, string | number, { reje
   },
 )
 
+export const lockTicket = createAsyncThunk<
+  TicketLock,
+  { ticketId: string | number; usuario: string },
+  { rejectValue: string }
+>(
+  'tickets/lockTicket',
+  async ({ ticketId, usuario }, { rejectWithValue }) => {
+    try {
+      const res = await ticketService.lockTicket(ticketId, usuario)
+      return {
+        ticketId: String(res.ticket_id || ticketId),
+        usuario: res.usuario || usuario,
+        expiraEnSegundos: res.expira_en_segundos,
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.detail || messageFromError(error)
+      return rejectWithValue(msg)
+    }
+  },
+)
+
+export const unlockTicket = createAsyncThunk<
+  string | number,
+  { ticketId: string | number; usuario?: string },
+  { rejectValue: string }
+>(
+  'tickets/unlockTicket',
+  async ({ ticketId, usuario }, { rejectWithValue }) => {
+    try {
+      await ticketService.unlockTicket(ticketId, usuario)
+      return ticketId
+    } catch (error) {
+      return rejectWithValue(messageFromError(error))
+    }
+  },
+)
+
 const toStoredTicket = (ticket: Ticket, current?: StoredTicket): StoredTicket => {
   const explicit = ticket.columnId ?? ticket.columna ?? current?.columnId;
   let resolved: number | undefined;
@@ -146,6 +185,26 @@ const ticketsSlice = createSlice({
       } else {
         state.items[index] = toStoredTicket(action.payload, state.items[index])
       }
+    },
+    updateTicketFromStream(state, action: PayloadAction<Ticket>) {
+      const stored = toStoredTicket(action.payload)
+      const index = state.items.findIndex((ticket) => String(ticket.id) === String(stored.id))
+      if (index !== -1) {
+        state.items[index] = toStoredTicket(action.payload, state.items[index])
+      } else {
+        state.items.unshift(stored)
+      }
+    },
+    removeTicketFromStream(state, action: PayloadAction<{ id: string | number }>) {
+      const targetId = String(action.payload.id)
+      state.items = state.items.filter((ticket) => String(ticket.id) !== targetId)
+      delete state.locks[targetId]
+    },
+    setTicketLock(state, action: PayloadAction<TicketLock>) {
+      state.locks[String(action.payload.ticketId)] = action.payload
+    },
+    clearTicketLock(state, action: PayloadAction<{ ticketId: string | number }>) {
+      delete state.locks[String(action.payload.ticketId)]
     },
   },
   extraReducers: (builder) => {
@@ -216,8 +275,22 @@ const ticketsSlice = createSlice({
           state.items[index] = toStoredTicket(action.payload, state.items[index])
         }
       })
+      .addCase(lockTicket.fulfilled, (state, action) => {
+        state.locks[String(action.payload.ticketId)] = action.payload
+      })
+      .addCase(unlockTicket.fulfilled, (state, action) => {
+        delete state.locks[String(action.payload)]
+      })
   },
 })
 
-export const { selectTicket, updateTicket, addTicketFromStream } = ticketsSlice.actions
+export const { 
+  selectTicket, 
+  updateTicket, 
+  addTicketFromStream, 
+  updateTicketFromStream, 
+  removeTicketFromStream, 
+  setTicketLock, 
+  clearTicketLock 
+} = ticketsSlice.actions
 export default ticketsSlice.reducer

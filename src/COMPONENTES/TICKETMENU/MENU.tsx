@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchTickets, saveTicket, deleteTicket, markTicketAsRead } from '../../REDUX/ticketsSlice'
+import { fetchTickets, saveTicket, deleteTicket, markTicketAsRead, lockTicket, unlockTicket } from '../../REDUX/ticketsSlice'
 import type { AppDispatch, RootState } from '../../REDUX/store'
 import { ModalTicket, ModalConfirmarEliminar } from '../EDITMODAL'
 import { TicketCreator } from '../CREATEMODAL'
 import type { Ticket } from '../../TYPES'
 import { TICKET_COLUMNS } from '../../TYPES'
 import { useModal, useTicketStream } from '../../hooks'
+import { getClientEmail } from '../../UTILS/storageUtils'
 import MenuHeader from './MenuHeader'
 import BoardColumn from './BoardColumn'
 
@@ -21,9 +22,10 @@ export default function Menu() {
   // Escucha de tickets en tiempo real vía Server-Sent Events y notificaciones (solo operadores)
   useTicketStream()
 
-  const { items: tickets, status, error } = useSelector((state: RootState) => state.tickets)
+  const { items: tickets, status, error, locks } = useSelector((state: RootState) => state.tickets)
   const dispatch = useDispatch<AppDispatch>()
   const [showFinished, setShowFinished] = useState(false)
+  const myEmail = (getClientEmail() || '').toLowerCase()
 
   // Modal para ver detalles o editar ticket existente
   const {
@@ -58,6 +60,33 @@ export default function Menu() {
     openDetailModal({ ticket: { ...ticket, leido: true }, isEditing })
   }
 
+  const handleRequestDelete = (ticket: Ticket) => {
+    const lock = locks?.[String(ticket.id)]
+    if (lock && lock.usuario && lock.usuario.toLowerCase() !== myEmail) {
+      alert(`No se puede eliminar el ticket porque está siendo editado por ${lock.usuario}.`)
+      return
+    }
+    openDeleteModal(ticket)
+  }
+
+  const handleLockTicket = async (ticket: Ticket): Promise<boolean> => {
+    try {
+      await dispatch(lockTicket({ ticketId: ticket.id, usuario: myEmail || 'Operador' })).unwrap()
+      return true
+    } catch (err) {
+      console.error('No se pudo bloquear el ticket:', err)
+      return false
+    }
+  }
+
+  const handleUnlockTicket = async (ticket: Ticket): Promise<void> => {
+    try {
+      await dispatch(unlockTicket({ ticketId: ticket.id, usuario: myEmail || 'Operador' })).unwrap()
+    } catch (err) {
+      console.error('No se pudo desbloquear el ticket:', err)
+    }
+  }
+
   const visibleTickets = showFinished
     ? tickets.filter((ticket) => {
         const estado = (ticket.estado || 'abierto').toLowerCase();
@@ -86,16 +115,28 @@ export default function Menu() {
 
   const handleConfirmDelete = async () => {
     if (!ticketToDelete) return
+    const lock = locks?.[String(ticketToDelete.id)]
+    if (lock && lock.usuario && lock.usuario.toLowerCase() !== myEmail) {
+      alert(`No se puede eliminar el ticket porque está siendo editado por ${lock.usuario}.`)
+      closeDeleteModal()
+      return
+    }
     try {
       setIsDeleting(true)
       await dispatch(deleteTicket(ticketToDelete.id)).unwrap()
       closeDeleteModal()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al eliminar ticket:', err)
+      alert(typeof err === 'string' ? err : 'Error al eliminar el ticket. Es posible que esté siendo editado por otro usuario.')
     } finally {
       setIsDeleting(false)
     }
   }
+
+  const deleteLock = ticketToDelete ? locks?.[String(ticketToDelete.id)] : null
+  const isDeleteLocked = Boolean(
+    deleteLock && deleteLock.usuario && deleteLock.usuario.toLowerCase() !== myEmail
+  )
 
   return (
     <main className="min-vh-100 d-flex flex-column">
@@ -118,7 +159,7 @@ export default function Menu() {
               onCreateTicket={openCreateModal}
               onEditTicket={(ticket) => handleOpenTicket(ticket, true)}
               onViewTicket={(ticket) => handleOpenTicket(ticket, false)}
-              onDeleteTicket={openDeleteModal}
+              onDeleteTicket={handleRequestDelete}
             />
           ))}
         </div>
@@ -131,7 +172,9 @@ export default function Menu() {
         initialEditing={detailModalData?.isEditing ?? false}
         onClose={closeDetailModal}
         onTicketUpdated={handleTicketUpdated}
-        onDelete={(ticket) => openDeleteModal(ticket)}
+        onDelete={(ticket) => handleRequestDelete(ticket)}
+        onLock={handleLockTicket}
+        onUnlock={handleUnlockTicket}
       />
 
       {/* Modal de Creación de Ticket para Soporte */}
@@ -148,6 +191,8 @@ export default function Menu() {
         ticketTitulo={ticketToDelete?.titulo}
         ticketIdentificador={ticketToDelete?.identificador || (ticketToDelete ? `TK-${ticketToDelete.id}` : undefined)}
         isDeleting={isDeleting}
+        isLockedByOther={isDeleteLocked}
+        lockedBy={deleteLock?.usuario}
         onCancel={closeDeleteModal}
         onConfirm={handleConfirmDelete}
       />

@@ -1,4 +1,7 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../REDUX/store';
+import { getClientEmail } from '../../UTILS/storageUtils';
 import Card, { type TicketCard } from './CARDPROP/CARD';
 import type { Ticket, ColumnOption } from '../../TYPES';
 
@@ -25,6 +28,8 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
   onViewTicket,
   onDeleteTicket,
 }) => {
+  const locks = useSelector((state: RootState) => state.tickets.locks || {});
+  const myEmail = (getClientEmail() || '').toLowerCase();
   return (
     <div className="col-12 col-sm-6 col-lg-3">
       <section className="h-100 bg-white rounded-3 shadow-sm border border-light-subtle p-3">
@@ -62,6 +67,10 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
           )}
 
           {tickets.map((ticket) => {
+            const lock = locks[String(ticket.id)];
+            const isLockedByOther = Boolean(
+              lock && lock.usuario && lock.usuario.toLowerCase() !== myEmail
+            );
             const card: TicketCard = {
               id: String(ticket.identificador || `TK-${ticket.id}`),
               title: ticket.titulo,
@@ -80,6 +89,8 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
                 ? `Cada ${ticket.frecuencia.numero} ${ticket.frecuencia.periodo.toLowerCase()}`
                 : undefined,
               isNew: ticket.leido === false,
+              lockedBy: lock?.usuario,
+              isLockedByOther,
             };
 
             return (

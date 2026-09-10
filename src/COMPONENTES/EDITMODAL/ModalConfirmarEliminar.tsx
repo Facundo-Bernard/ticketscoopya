@@ -5,6 +5,8 @@ export interface ModalConfirmarEliminarProps {
   ticketTitulo?: string;
   ticketIdentificador?: string;
   isDeleting?: boolean;
+  isLockedByOther?: boolean;
+  lockedBy?: string;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -14,6 +16,8 @@ export const ModalConfirmarEliminar: React.FC<ModalConfirmarEliminarProps> = ({
   ticketTitulo,
   ticketIdentificador,
   isDeleting = false,
+  isLockedByOther = false,
+  lockedBy,
   onCancel,
   onConfirm,
 }) => {
@@ -59,6 +63,15 @@ export const ModalConfirmarEliminar: React.FC<ModalConfirmarEliminarProps> = ({
                     </strong>
                     ? Esta acción no se puede deshacer.
                   </p>
+
+                  {isLockedByOther && (
+                    <div className="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mt-3 mb-0">
+                      <span>🔒</span>
+                      <span>
+                        No se puede eliminar: el ticket está siendo editado por <strong>{lockedBy}</strong>.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -74,9 +87,10 @@ export const ModalConfirmarEliminar: React.FC<ModalConfirmarEliminarProps> = ({
               </button>
               <button
                 type="button"
-                className="btn btn-sm btn-danger px-3 d-flex align-items-center gap-1"
+                className={`btn btn-sm px-3 d-flex align-items-center gap-1 ${isLockedByOther ? 'btn-secondary opacity-75' : 'btn-danger'}`}
                 onClick={onConfirm}
-                disabled={isDeleting}
+                disabled={isDeleting || isLockedByOther}
+                title={isLockedByOther ? `Bloqueado: en edición por ${lockedBy}` : undefined}
               >
                 {isDeleting ? (
                   <>
@@ -84,7 +98,7 @@ export const ModalConfirmarEliminar: React.FC<ModalConfirmarEliminarProps> = ({
                     <span>Eliminando…</span>
                   </>
                 ) : (
-                  <span>Sí, Eliminar</span>
+                  <span>{isLockedByOther ? '🔒 Bloqueado' : 'Sí, Eliminar'}</span>
                 )}
               </button>
             </div>

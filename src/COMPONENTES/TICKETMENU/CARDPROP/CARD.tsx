@@ -10,6 +10,8 @@ export type TicketCard = {
   priority?: string
   frequency?: string
   isNew?: boolean
+  lockedBy?: string
+  isLockedByOther?: boolean
 }
 
 export default function Card({ 
@@ -36,13 +38,22 @@ export default function Card({
         }
       }}
     >
-      {/* Encabezado: ID + Prioridad + Indicador "Nuevo" (izq) y Menú 3 Puntos (der) */}
+      {/* Encabezado: ID + Prioridad + Candado (si está bloqueado) + Indicador "Nuevo" (izq) y Menú 3 Puntos (der) */}
       <div className="d-flex justify-content-between align-items-center mb-2">
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           <span className="badge bg-light text-secondary border rounded-2 fw-semibold">
             {card.id}
           </span>
           {getPriorityBadge(card.priority)}
+          {card.lockedBy && (
+            <span 
+              className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-2 d-inline-flex align-items-center gap-1"
+              title={`En edición por ${card.lockedBy}`}
+            >
+              <span>🔒</span>
+              <span className="text-truncate" style={{ maxWidth: '90px' }}>{card.lockedBy}</span>
+            </span>
+          )}
           {card.isNew && (
             <span className="d-inline-flex align-items-center gap-1 ms-1" title="Ticket nuevo / no leído">
               <span className="ticket-pulse-dot" />
@@ -56,6 +67,8 @@ export default function Card({
             ticketTitle={card.title}
             onEdit={onClick}
             onDelete={onDelete}
+            isLockedByOther={card.isLockedByOther}
+            lockedBy={card.lockedBy}
           />
         </div>
       </div>
