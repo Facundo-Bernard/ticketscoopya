@@ -5,6 +5,8 @@ export interface ModalTicketOperationsProps {
   ticket: Ticket | null;
   isOpen: boolean;
   initialEditing?: boolean;
+  isLockedByOther?: boolean;
+  lockedBy?: string;
   onClose: () => void;
   onTicketUpdated?: (ticket: Ticket) => void | Promise<void>;
   onLock?: (ticket: Ticket) => Promise<boolean>;
@@ -15,6 +17,8 @@ export function useModalTicketOperations({
   ticket,
   isOpen,
   initialEditing = false,
+  isLockedByOther = false,
+  lockedBy,
   onClose,
   onTicketUpdated,
   onLock,
@@ -28,13 +32,17 @@ export function useModalTicketOperations({
 
   const requestLockAndEdit = async (): Promise<boolean> => {
     if (!ticket) return false;
+    if (isLockedByOther) {
+      setLockError(`El ticket está siendo editado por ${lockedBy || 'otro usuario'}.`);
+      return false;
+    }
     setLockError(null);
     setIsLocking(true);
     try {
       if (onLock) {
         const success = await onLock(ticket);
         if (!success) {
-          setLockError('El ticket está siendo editado por otro usuario.');
+          setLockError(`El ticket está siendo editado por ${lockedBy || 'otro usuario'}.`);
           return false;
         }
       }
@@ -43,7 +51,7 @@ export function useModalTicketOperations({
       });
       return true;
     } catch (err: any) {
-      const detail = typeof err === 'string' ? err : 'El ticket está siendo editado por otro usuario.';
+      const detail = typeof err === 'string' ? err : `El ticket está siendo editado por ${lockedBy || 'otro usuario'}.`;
       setLockError(detail);
       return false;
     } finally {
@@ -63,7 +71,7 @@ export function useModalTicketOperations({
   useEffect(() => {
     if (isOpen) {
       setLockError(null);
-      if (initialEditing) {
+      if (initialEditing && !isLockedByOther) {
         requestLockAndEdit();
       } else {
         setIsEditing(false);
@@ -72,7 +80,7 @@ export function useModalTicketOperations({
       setIsEditing(false);
       setLockError(null);
     }
-  }, [isOpen, initialEditing, ticket?.id]);
+  }, [isOpen, initialEditing, isLockedByOther, ticket?.id]);
 
   const toggleEditMode = async (editing: boolean): Promise<void> => {
     if (editing) {

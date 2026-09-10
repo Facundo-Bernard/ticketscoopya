@@ -26,23 +26,129 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Tarjeta interactiva de Ticket */
+/* Tarjeta interactiva de Ticket con micro-animaciones fluidas */
 .ticket-card {
   position: relative;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
-  border: 1px solid #e2e8f0;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
+  border: 1px solid rgba(226, 232, 240, 0.85);
   border-radius: 12px;
   background-color: #ffffff;
   cursor: pointer;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+  animation: card-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  will-change: transform, box-shadow, opacity;
+}
+
+/* Animación de entrada para tarjetas: subiendo suavemente hacia su posición */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animación de salida y colapso fluido para tickets eliminados */
+@keyframes ticket-card-delete {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+    max-height: 280px;
+    margin-top: 0;
+    margin-bottom: 0;
+    filter: blur(0);
+  }
+
+  25% {
+    opacity: 0.85;
+    transform: scale(0.98) translateX(10px);
+    background-color: #fef2f2;
+    border-color: #fca5a5;
+    max-height: 280px;
+  }
+
+  50% {
+    opacity: 0.35;
+    transform: scale(0.93) translateX(24px);
+    filter: blur(1px);
+  }
+
+  75% {
+    opacity: 0;
+    transform: scale(0.86) translateX(36px);
+    max-height: 120px;
+    margin-top: -0.5rem;
+    filter: blur(2px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateX(44px);
+    max-height: 0;
+    margin-top: -1rem;
+    /* compensa exactamente el gap-3 de Bootstrap */
+    margin-bottom: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-width: 0 !important;
+    overflow: hidden !important;
+  }
+}
+
+.ticket-card.ticket-card-deleting {
+  pointer-events: none !important;
+  animation: ticket-card-delete 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  overflow: hidden !important;
+}
+
+/* Animación de actualización en vivo (cambio de datos o reactivación) */
+@keyframes ticket-card-updated {
+  0% {
+    transform: scale(0.99);
+    background-color: #eff6ff;
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  }
+
+  40% {
+    transform: scale(1.012);
+    background-color: #eff6ff;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
+
+  100% {
+    transform: scale(1);
+    background-color: #ffffff;
+    border-color: rgba(226, 232, 240, 0.85);
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+  }
 }
 
 .ticket-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2.5px);
   border-color: #cbd5e1;
-  box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 14px 28px -8px rgba(15, 23, 42, 0.08),
+    0 4px 10px -2px rgba(15, 23, 42, 0.03),
+    0 0 0 1px rgba(0, 43, 94, 0.04);
+}
+
+.ticket-card:active {
+  transform: scale(0.988) translateY(-0.5px);
+  box-shadow:
+    0 4px 8px -2px rgba(15, 23, 42, 0.05),
+    0 2px 4px -1px rgba(15, 23, 42, 0.02);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 
 .ticket-card.ticket-card-unread {
@@ -151,7 +257,7 @@ body {
   border: 1px dashed #cbd5e1;
 }
 
-/* Botón sutil con icono (ej. lápiz de edición) */
+/* Botón sutil con icono (ej. lápiz de edición, menú 3 puntos) */
 .btn-icon-subtle {
   width: 28px;
   height: 28px;
@@ -159,16 +265,21 @@ body {
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: 50%;
+  border-radius: 6px;
   background: transparent;
   color: #64748b;
-  transition: all 0.15s ease;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-icon-subtle:hover {
   background-color: #f1f5f9;
   border-color: #e2e8f0;
   color: var(--coopya-primary);
+  transform: scale(1.05);
+}
+
+.btn-icon-subtle:active {
+  transform: scale(0.93);
 }
 
 /* Botón refinado 'Ver más' */
@@ -180,13 +291,28 @@ body {
   font-size: 12.5px;
   border-radius: 8px;
   padding: 4px 12px;
-  transition: all 0.18s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-view-ticket:hover {
   background-color: var(--coopya-primary);
   color: #ffffff;
   border-color: var(--coopya-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 43, 94, 0.22);
+}
+
+.btn-view-ticket:active {
+  transform: scale(0.965);
+}
+
+/* Transición fluida para todos los botones interactivos */
+.btn {
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 /* Truncado limpio a 2 líneas para descripciones y títulos */
@@ -221,6 +347,11 @@ body {
   font-weight: 800;
   font-size: 18px;
   box-shadow: 0 2px 6px rgba(217, 37, 37, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.brand-logo-badge:hover {
+  transform: scale(1.04);
 }
 
 .brand-title-coopya {
@@ -240,23 +371,33 @@ body {
   border: 1px solid var(--coopya-red);
   font-weight: 600;
   border-radius: 8px;
-  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px 0 rgba(217, 37, 37, 0.2);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.btn-coopya-red:hover,
-.btn-coopya-red:focus {
+.btn-coopya-red:hover:not(:disabled),
+.btn-coopya-red:focus:not(:disabled) {
   background-color: var(--coopya-red-hover);
   border-color: var(--coopya-red-hover);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(217, 37, 37, 0.28);
+  box-shadow: 0 6px 16px -2px rgba(217, 37, 37, 0.32), 0 2px 4px -1px rgba(217, 37, 37, 0.16);
+  transform: translateY(-1px);
 }
 
-/* Acento institucional superior en modales */
+.btn-coopya-red:active:not(:disabled) {
+  transform: scale(0.975);
+  box-shadow: 0 1px 2px 0 rgba(217, 37, 37, 0.2);
+}
+
+/* Acento institucional superior en modales con sombra difusa multicapa */
 .modal-top-accent {
-  border: 1px solid #e2e8f0 !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
   border-top: 4px solid var(--coopya-red) !important;
+  box-shadow:
+    0 25px 50px -12px rgba(15, 23, 42, 0.18),
+    0 8px 24px -4px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.04) !important;
 }
-
 
 /* Indicadores de color para columnas de tablero */
 .column-dot {
@@ -265,6 +406,7 @@ body {
   border-radius: 50%;
   display: inline-block;
   background-color: var(--coopya-navy);
+  transition: transform 0.2s ease;
 }
 
 .column-dot-1 {
@@ -288,18 +430,36 @@ body {
 
 /* Periódicas: verde */
 
-/* Menú desplegable de 3 puntos en tarjeta */
+/* Menú desplegable de 3 puntos en tarjeta con animación de entrada suave */
 .card-menu-dropdown {
   position: absolute;
   top: 100%;
   right: 0;
   z-index: 1020;
-  min-width: 140px;
+  min-width: 144px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  padding: 4px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 10px;
+  box-shadow:
+    0 16px 32px -8px rgba(15, 23, 42, 0.12),
+    0 4px 12px -2px rgba(15, 23, 42, 0.04),
+    0 0 0 1px rgba(15, 23, 42, 0.03);
+  padding: 5px;
+  animation: dropdown-enter 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+  will-change: transform, opacity;
+}
+
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .card-menu-item {
@@ -307,7 +467,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 7px 12px;
   font-size: 13px;
   font-weight: 500;
   color: #334155;
@@ -315,21 +475,23 @@ body {
   border: none;
   border-radius: 6px;
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.14s ease, color 0.14s ease, transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card-menu-item:hover {
+.card-menu-item:hover:not(.opacity-50):not(:disabled) {
   background-color: #f1f5f9;
   color: #0f172a;
+  transform: translateX(3px);
 }
 
 .card-menu-item.danger {
   color: #dc2626;
 }
 
-.card-menu-item.danger:hover {
+.card-menu-item.danger:hover:not(.opacity-50):not(:disabled) {
   background-color: #fee2e2;
   color: #b91c1c;
+  transform: translateX(3px);
 }
 
 /* Caja de icono para alertas destructivas en modal */
@@ -343,29 +505,108 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.2s ease;
 }
 
-/* Ancho para modal de confirmación */
+/* Ancho y animaciones para modales */
 .modal-dialog-confirm {
   max-width: 440px;
 }
 
+/* Suprimir backdrops negros opacos de Bootstrap para evitar oscuridad excesiva */
+.modal-backdrop,
+.modal-backdrop-custom,
 .modal-backdrop-confirm {
-  z-index: 1060;
+  display: none !important;
+}
+
+@keyframes backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdrop-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.975) translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.975) translateY(10px);
+  }
+}
+
+/* Backdrop corporativo translúcido con desenfoque de fondo - Estilo Enterprise */
+.modal-wrapper-custom,
+.modal-confirm-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background-color: rgba(15, 23, 42, 0.42) !important;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: backdrop-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .modal-confirm-wrapper {
   z-index: 1070;
-  background-color: rgba(0, 0, 0, 0.5);
 }
 
-.modal-backdrop-custom {
-  z-index: 1040;
+.modal-wrapper-custom .modal-dialog,
+.modal-confirm-wrapper .modal-dialog {
+  animation: modal-scale-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
-.modal-wrapper-custom {
-  z-index: 1050;
-  background-color: rgba(0, 0, 0, 0.5);
+/* Animaciones de cierre refinadas para modales */
+.modal-wrapper-custom.modal-closing,
+.modal-confirm-wrapper.modal-closing {
+  pointer-events: none !important;
+  overflow: hidden !important;
+  animation: backdrop-fade-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.modal-wrapper-custom.modal-closing .modal-dialog,
+.modal-confirm-wrapper.modal-closing .modal-dialog {
+  pointer-events: none !important;
+  animation: modal-scale-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* Iconos SVG centralizados */
+.icon-svg {
+  display: inline-block;
+  vertical-align: middle;
+  transition: transform 0.15s ease;
 }
 
 /* ==========================================================================

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCatalogs } from '../../COMPOSABLES/useCatalogs';
 import { TICKET_COLUMNS } from '../../TYPES';
+import { UserCheckIcon } from '../COMUN/Icons';
 
 export interface TicketFormData {
   titulo: string;
@@ -100,7 +101,7 @@ export const TicketFormCampos: React.FC<TicketFormCamposProps> = ({
         <div className="mb-3">
           {hasStoredEmail && emailValue ? (
             <div className="p-3 bg-light rounded-3 border d-flex align-items-center gap-3">
-              <i className="bi bi-person-check-fill text-primary fs-4"></i>
+              <UserCheckIcon size={24} className="text-primary flex-shrink-0" />
               <div>
                 <span className="small text-muted d-block">Solicitante</span>
                 <span className="fw-semibold text-dark">{emailValue}</span>

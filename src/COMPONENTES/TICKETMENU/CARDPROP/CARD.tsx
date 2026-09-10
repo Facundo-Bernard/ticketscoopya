@@ -1,5 +1,10 @@
+import { useEffect } from 'react'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../../../REDUX/store'
+import { unmarkTicketAsUpdated } from '../../../REDUX/ticketsSlice'
 import CardActionsMenu from './CardActionsMenu'
 import { getPriorityBadge } from './cardUtils'
+import { LockIcon } from '../../COMUN/Icons'
 
 export type TicketCard = {
   id: string
@@ -16,22 +21,44 @@ export type TicketCard = {
 
 export default function Card({ 
   card, 
+  ticketId,
   onClick, 
   onViewMore, 
-  onDelete 
+  onDelete,
+  isDeleting = false,
+  isRecentlyUpdated = false,
 }: { 
   card: TicketCard; 
+  ticketId?: string | number;
   onClick: () => void; 
   onViewMore?: () => void;
   onDelete?: () => void;
+  isDeleting?: boolean;
+  isRecentlyUpdated?: boolean;
 }) {
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    if (isRecentlyUpdated && ticketId) {
+      const timer = setTimeout(() => {
+        dispatch(unmarkTicketAsUpdated(ticketId));
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [isRecentlyUpdated, ticketId, dispatch]);
+
   return (
     <div 
-      className={`ticket-card p-3 text-start w-100 ${card.isNew ? 'ticket-card-unread' : ''}`}
-      onClick={onViewMore}
+      className={`ticket-card p-3 text-start w-100 ${
+        card.isNew ? 'ticket-card-unread' : ''
+      } ${
+        isDeleting ? 'ticket-card-deleting' : ''
+      } ${isRecentlyUpdated ? 'ticket-card-updated' : ''}`}
+      onClick={isDeleting ? undefined : onViewMore}
       role="button"
-      tabIndex={0}
+      tabIndex={isDeleting ? -1 : 0}
       onKeyDown={(e) => {
+        if (isDeleting) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onViewMore?.();
@@ -50,7 +77,7 @@ export default function Card({
               className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-2 d-inline-flex align-items-center gap-1"
               title={`En edición por ${card.lockedBy}`}
             >
-              <span>🔒</span>
+              <LockIcon size={12} className="text-warning-emphasis" />
               <span className="text-truncate" style={{ maxWidth: '90px' }}>{card.lockedBy}</span>
             </span>
           )}

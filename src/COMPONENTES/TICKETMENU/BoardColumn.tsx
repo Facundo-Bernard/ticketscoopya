@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../REDUX/store';
-import { getClientEmail } from '../../UTILS/storageUtils';
+import { getOperatorIdentity } from '../../UTILS/storageUtils';
 import Card, { type TicketCard } from './CARDPROP/CARD';
 import type { Ticket, ColumnOption } from '../../TYPES';
 
@@ -21,15 +21,19 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
   column,
   tickets,
   isLoading = false,
-  errorMessage = null,
+  errorMessage,
   showFinished,
   onCreateTicket,
   onEditTicket,
   onViewTicket,
   onDeleteTicket,
 }) => {
-  const locks = useSelector((state: RootState) => state.tickets.locks || {});
-  const myEmail = (getClientEmail() || '').toLowerCase();
+  const {
+    locks = {},
+    deletingIds = [],
+    updatedIds = [],
+  } = useSelector((state: RootState) => state.tickets);
+  const myEmail = (getOperatorIdentity() || '').toLowerCase();
   return (
     <div className="col-12 col-sm-6 col-lg-3">
       <section className="h-100 bg-white rounded-3 shadow-sm border border-light-subtle p-3">
@@ -67,10 +71,14 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
           )}
 
           {tickets.map((ticket) => {
-            const lock = locks[String(ticket.id)];
+            const ticketIdStr = String(ticket.id);
+            const lock = locks[ticketIdStr];
             const isLockedByOther = Boolean(
               lock && lock.usuario && lock.usuario.toLowerCase() !== myEmail
             );
+            const isDeleting = deletingIds.includes(ticketIdStr);
+            const isRecentlyUpdated = updatedIds.includes(ticketIdStr);
+
             const card: TicketCard = {
               id: String(ticket.identificador || `TK-${ticket.id}`),
               title: ticket.titulo,
@@ -96,7 +104,10 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
             return (
               <Card
                 key={card.id}
+                ticketId={ticket.id}
                 card={card}
+                isDeleting={isDeleting}
+                isRecentlyUpdated={isRecentlyUpdated}
                 onClick={() => onEditTicket(ticket)}
                 onViewMore={() => onViewTicket(ticket)}
                 onDelete={() => onDeleteTicket(ticket)}

@@ -1,13 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchTickets, saveTicket, deleteTicket, markTicketAsRead, lockTicket, unlockTicket } from '../../REDUX/ticketsSlice'
+import { 
+  fetchTickets, 
+  saveTicket, 
+  deleteTicket, 
+  markTicketAsRead, 
+  lockTicket, 
+  unlockTicket, 
+  checkTicketLock,
+  markTicketAsDeleting,
+  unmarkTicketAsDeleting,
+  markTicketAsUpdated,
+  addTicketFromStream,
+} from '../../REDUX/ticketsSlice'
 import type { AppDispatch, RootState } from '../../REDUX/store'
 import { ModalTicket, ModalConfirmarEliminar } from '../EDITMODAL'
 import { TicketCreator } from '../CREATEMODAL'
 import type { Ticket } from '../../TYPES'
 import { TICKET_COLUMNS } from '../../TYPES'
 import { useModal, useTicketStream } from '../../hooks'
-import { getClientEmail } from '../../UTILS/storageUtils'
+import { getOperatorIdentity } from '../../UTILS/storageUtils'
 import MenuHeader from './MenuHeader'
 import BoardColumn from './BoardColumn'
 
@@ -25,11 +37,12 @@ export default function Menu() {
   const { items: tickets, status, error, locks } = useSelector((state: RootState) => state.tickets)
   const dispatch = useDispatch<AppDispatch>()
   const [showFinished, setShowFinished] = useState(false)
-  const myEmail = (getClientEmail() || '').toLowerCase()
+  const myEmail = (getOperatorIdentity() || '').toLowerCase()
 
   // Modal para ver detalles o editar ticket existente
   const {
     isOpen: isDetailOpen,
+    isClosing: isDetailClosing,
     selectedData: detailModalData,
     openModal: openDetailModal,
     closeModal: closeDetailModal
@@ -38,6 +51,7 @@ export default function Menu() {
   // Modal para crear nuevo ticket de soporte
   const {
     isOpen: isCreateOpen,
+    isClosing: isCreateClosing,
     selectedData: createColumnId,
     openModal: openCreateModal,
     closeModal: closeCreateModal
@@ -46,6 +60,7 @@ export default function Menu() {
   // Modal de confirmación para eliminar ticket
   const {
     isOpen: isDeleteOpen,
+    isClosing: isDeleteClosing,
     selectedData: ticketToDelete,
     openModal: openDeleteModal,
     closeModal: closeDeleteModal
@@ -57,7 +72,15 @@ export default function Menu() {
     if (ticket.leido === false) {
       dispatch(markTicketAsRead(ticket.id))
     }
-    openDetailModal({ ticket: { ...ticket, leido: true }, isEditing })
+    dispatch(checkTicketLock(ticket.id))
+
+    const lock = locks?.[String(ticket.id)]
+    const isLocked = Boolean(lock && lock.usuario && lock.usuario.toLowerCase() !== myEmail)
+
+    openDetailModal({ 
+      ticket: { ...ticket, leido: true }, 
+      isEditing: isEditing && !isLocked 
+    })
   }
 
   const handleRequestDelete = (ticket: Ticket) => {
@@ -103,30 +126,43 @@ export default function Menu() {
     }
   }, [dispatch, status])
 
-  const handleTicketCreated = () => {
+  const handleTicketCreated = (nuevoTicket?: Ticket) => {
+    if (nuevoTicket && nuevoTicket.id) {
+      dispatch(addTicketFromStream(nuevoTicket))
+    }
     dispatch(fetchTickets())
     closeCreateModal()
   }
 
   const handleTicketUpdated = async (updatedTicket: Ticket) => {
+    if (updatedTicket && updatedTicket.id) {
+      dispatch(markTicketAsUpdated(updatedTicket.id))
+    }
     await dispatch(saveTicket(updatedTicket)).unwrap()
     dispatch(fetchTickets())
   }
 
   const handleConfirmDelete = async () => {
     if (!ticketToDelete) return
-    const lock = locks?.[String(ticketToDelete.id)]
+    const ticketId = ticketToDelete.id
+    const lock = locks?.[String(ticketId)]
     if (lock && lock.usuario && lock.usuario.toLowerCase() !== myEmail) {
       alert(`No se puede eliminar el ticket porque está siendo editado por ${lock.usuario}.`)
       closeDeleteModal()
       return
     }
+
+    // 1. Iniciar animación de salida en la tarjeta y cerrar modal de confirmación
+    dispatch(markTicketAsDeleting(ticketId))
+    closeDeleteModal()
+
     try {
       setIsDeleting(true)
-      await dispatch(deleteTicket(ticketToDelete.id)).unwrap()
-      closeDeleteModal()
+      // 2. Ejecutar la llamada a la API (que aguarda los 400ms para completar la animación fluida)
+      await dispatch(deleteTicket(ticketId)).unwrap()
     } catch (err: any) {
       console.error('Error al eliminar ticket:', err)
+      dispatch(unmarkTicketAsDeleting(ticketId))
       alert(typeof err === 'string' ? err : 'Error al eliminar el ticket. Es posible que esté siendo editado por otro usuario.')
     } finally {
       setIsDeleting(false)
@@ -167,8 +203,13 @@ export default function Menu() {
 
       {/* Modal de Detalle / Edición / Reactivación */}
       <ModalTicket
-        ticket={detailModalData?.ticket ?? null}
+        ticket={
+          detailModalData?.ticket
+            ? (tickets.find((t) => String(t.id) === String(detailModalData.ticket.id)) ?? detailModalData.ticket)
+            : null
+        }
         isOpen={isDetailOpen}
+        isClosing={isDetailClosing}
         initialEditing={detailModalData?.isEditing ?? false}
         onClose={closeDetailModal}
         onTicketUpdated={handleTicketUpdated}
@@ -180,6 +221,7 @@ export default function Menu() {
       {/* Modal de Creación de Ticket para Soporte */}
       <TicketCreator
         isOpen={isCreateOpen}
+        isClosing={isCreateClosing}
         initialColumna={createColumnId ?? 1}
         onClose={closeCreateModal}
         onSuccess={handleTicketCreated}
@@ -188,6 +230,7 @@ export default function Menu() {
       {/* Modal de Confirmación de Eliminación */}
       <ModalConfirmarEliminar
         isOpen={isDeleteOpen}
+        isClosing={isDeleteClosing}
         ticketTitulo={ticketToDelete?.titulo}
         ticketIdentificador={ticketToDelete?.identificador || (ticketToDelete ? `TK-${ticketToDelete.id}` : undefined)}
         isDeleting={isDeleting}

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { LockIcon, EditIcon, TrashIcon } from '../../COMUN/Icons';
 
 export interface CardActionsMenuProps {
   ticketTitle: string;
@@ -71,19 +72,8 @@ export const CardActionsMenu: React.FC<CardActionsMenuProps> = ({
             }}
             title={isLockedByOther ? `Bloqueado para edición por ${lockedBy}` : undefined}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-            </svg>
-            <span>{isLockedByOther ? '🔒 En edición' : 'Editar'}</span>
+            {isLockedByOther ? <LockIcon size={14} /> : <EditIcon size={14} />}
+            <span>{isLockedByOther ? 'En edición' : 'Editar'}</span>
           </button>
 
           <button
@@ -97,20 +87,8 @@ export const CardActionsMenu: React.FC<CardActionsMenuProps> = ({
             }}
             title={isLockedByOther ? `No se puede eliminar: en edición por ${lockedBy}` : undefined}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-            <span>{isLockedByOther ? '🔒 Bloqueado' : 'Eliminar'}</span>
+            {isLockedByOther ? <LockIcon size={14} /> : <TrashIcon size={14} />}
+            <span>{isLockedByOther ? 'Bloqueado' : 'Eliminar'}</span>
           </button>
         </div>
       )}

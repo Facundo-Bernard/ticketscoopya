@@ -5,6 +5,14 @@ import {
   formatCatalogLabel 
 } from '../../TICKETMENU/ticketStates';
 import { type Ticket, TICKET_COLUMNS } from '../../../TYPES';
+import { 
+  FlagIcon, 
+  PinIcon, 
+  UserIcon, 
+  CalendarIcon, 
+  RepeatIcon, 
+  ZoomInIcon 
+} from '../../COMUN/Icons';
 
 interface TicketDetalleProps {
   ticket: Ticket | null;
@@ -37,39 +45,39 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
         <span className={`badge bg-${stateColor}`}>{stateLabel}</span>
 
         {ticket.prioridad && (
-          <span className={`badge bg-${prioridadColor}`}>
-            <i className="bi bi-flag-fill me-1"></i>
+          <span className={`badge bg-${prioridadColor} d-inline-flex align-items-center`}>
+            <FlagIcon size={12} className="me-1" />
             {prioridadLabel}
           </span>
         )}
 
         {columnaId && (
-          <span className="badge bg-light text-dark border">
-            <span className="me-1">📌</span>
+          <span className="badge bg-light text-dark border d-inline-flex align-items-center">
+            <PinIcon size={12} className="me-1 text-secondary" />
             {columnaLabel}
           </span>
         )}
 
         {ticket.colaborador && ticket.colaborador.trim() ? (
-          <span className="badge bg-light text-dark border">
-            <i className="bi bi-person-fill text-info me-1"></i> {ticket.colaborador}
+          <span className="badge bg-light text-dark border d-inline-flex align-items-center">
+            <UserIcon size={13} className="me-1 text-primary" /> {ticket.colaborador}
           </span>
         ) : (
-          <span className="badge bg-light text-secondary border">
-            <i className="bi bi-person me-1"></i> Sin Asignar
+          <span className="badge bg-light text-secondary border d-inline-flex align-items-center">
+            <UserIcon size={13} className="me-1 text-secondary opacity-75" /> Sin Asignar
           </span>
         )}
 
         {ticket.fechaCreacion && (
-          <span className="badge bg-light text-secondary border">
-            <i className="bi bi-calendar3 me-1"></i>
+          <span className="badge bg-light text-secondary border d-inline-flex align-items-center">
+            <CalendarIcon size={12} className="me-1 text-secondary" />
             {new Date(ticket.fechaCreacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
           </span>
         )}
 
         {ticket.frecuencia && ticket.frecuencia.periodo !== 'No recurrente' && (
-          <span className="badge bg-secondary">
-            <i className="bi bi-arrow-repeat me-1"></i> 
+          <span className="badge bg-secondary d-inline-flex align-items-center">
+            <RepeatIcon size={12} className="me-1" /> 
             Cada {ticket.frecuencia.numero} {ticket.frecuencia.periodo}
           </span>
         )}
@@ -103,8 +111,8 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
                     (e.currentTarget as HTMLImageElement).classList.add('opacity-50');
                   }}
                 />
-                <span className="badge bg-dark bg-opacity-75 position-absolute bottom-0 end-0 m-1 badge-zoom">
-                  🔍 Ampliar
+                <span className="badge bg-dark bg-opacity-75 position-absolute bottom-0 end-0 m-1 badge-zoom d-inline-flex align-items-center">
+                  <ZoomInIcon size={11} className="me-1" /> Ampliar
                 </span>
               </a>
             ))}

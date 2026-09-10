@@ -6,7 +6,8 @@ import {
   updateTicketFromStream, 
   removeTicketFromStream, 
   setTicketLock, 
-  clearTicketLock 
+  clearTicketLock,
+  markTicketAsDeleting,
 } from '../REDUX/ticketsSlice';
 import { mapBackendToFrontendTicket } from '../SERVICES/ticketService';
 import { API_BASE_URL } from '../SERVICES/api';
@@ -78,8 +79,6 @@ export function useTicketStream(): void {
         const rawData = JSON.parse(event.data);
         const ticket = mapBackendToFrontendTicket(rawData);
         dispatch(updateTicketFromStream(ticket));
-        // Si estaba bloqueado, al actualizarse se libera
-        dispatch(clearTicketLock({ ticketId: ticket.id }));
       } catch (err) {
         console.error('Error procesando evento SSE ticket_actualizado:', err);
       }
@@ -92,7 +91,10 @@ export function useTicketStream(): void {
         const rawData = JSON.parse(event.data);
         const ticketId = rawData.id || rawData.ticket_id;
         if (ticketId) {
-          dispatch(removeTicketFromStream({ id: ticketId }));
+          dispatch(markTicketAsDeleting(ticketId));
+          setTimeout(() => {
+            dispatch(removeTicketFromStream({ id: ticketId }));
+          }, 400);
         }
       } catch (err) {
         console.error('Error procesando evento SSE ticket_eliminado:', err);
