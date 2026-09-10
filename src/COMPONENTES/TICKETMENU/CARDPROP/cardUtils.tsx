@@ -11,15 +11,26 @@ export function getInitials(name: string): string {
 }
 
 /**
- * Retorna el badge estilizado con colores sutiles de Bootstrap según la prioridad.
+ * Retorna el indicador de 3 píldoras horizontales sin texto según la prioridad.
+ * - Baja: 1 activa (Celeste #0284c7), 2 inactivas
+ * - Media: 2 activas (Ámbar #f59e0b), 1 inactiva
+ * - Alta: 3 activas (Rosa Fucsia #db2777)
  */
 export function getPriorityBadge(priority?: string): ReactNode {
-  const p = priority?.toLowerCase();
-  if (p === 'alta') {
-    return <span className="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-2">ALTA</span>;
-  }
-  if (p === 'baja') {
-    return <span className="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-2">BAJA</span>;
-  }
-  return <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-2">MEDIA</span>;
+  const p = priority?.toLowerCase() || 'media';
+  const level = p === 'alta' ? 3 : p === 'baja' ? 1 : 2;
+  const label = p === 'alta' ? 'Alta' : p === 'baja' ? 'Baja' : 'Media';
+  const priorityClass = `priority-pills-${p === 'alta' ? 'alta' : p === 'baja' ? 'baja' : 'media'}`;
+
+  return (
+    <div 
+      className={`priority-pills ${priorityClass}`} 
+      title={`Prioridad: ${label}`}
+      aria-label={`Prioridad: ${label}`}
+    >
+      <span className={`priority-pill ${level >= 1 ? 'active' : ''}`} />
+      <span className={`priority-pill ${level >= 2 ? 'active' : ''}`} />
+      <span className={`priority-pill ${level >= 3 ? 'active' : ''}`} />
+    </div>
+  );
 }

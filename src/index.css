@@ -77,6 +77,7 @@ body {
     transform: scale(0.8);
     opacity: 1;
   }
+
   100% {
     transform: scale(2.3);
     opacity: 0;
@@ -95,6 +96,38 @@ body {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
+}
+
+/* Indicador de prioridad: 3 píldoras horizontales sin cápsula */
+.priority-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: default;
+  user-select: none;
+}
+
+.priority-pill {
+  width: 24px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: #e2e8f0;
+  transition: background-color 0.15s ease;
+}
+
+.priority-pills-alta .priority-pill.active {
+  background-color: #db2777;
+  /* Rosa Fucsia */
+}
+
+.priority-pills-media .priority-pill.active {
+  background-color: #f59e0b;
+  /* Ámbar */
+}
+
+.priority-pills-baja .priority-pill.active {
+  background-color: #0284c7;
+  /* Celeste */
 }
 
 /* Avatar circular de colaborador con iniciales */
@@ -233,10 +266,27 @@ body {
   display: inline-block;
   background-color: var(--coopya-navy);
 }
-.column-dot-1 { background-color: #ef4444; } /* Tickets: rojo */
-.column-dot-2 { background-color: #f59e0b; } /* Hitos: naranja */
-.column-dot-3 { background-color: #3b82f6; } /* Tareas: azul */
-.column-dot-4 { background-color: #10b981; } /* Periódicas: verde */
+
+.column-dot-1 {
+  background-color: #ef4444;
+}
+
+/* Tickets: rojo */
+.column-dot-2 {
+  background-color: #f59e0b;
+}
+
+/* Hitos: naranja */
+.column-dot-3 {
+  background-color: #3b82f6;
+}
+
+/* Tareas: azul */
+.column-dot-4 {
+  background-color: #10b981;
+}
+
+/* Periódicas: verde */
 
 /* Menú desplegable de 3 puntos en tarjeta */
 .card-menu-dropdown {
