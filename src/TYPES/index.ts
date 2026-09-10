@@ -19,7 +19,8 @@ export interface Ticket {
   fechaCreacion: string;
   fechaModificacion: string;
   fechaCierre: string | null;
-  frecuencia?: Frecuencia;
+  leido?: boolean;
+  frecuencia?: Frecuencia | null;
   columnId?: number | string;
   columna?: number | string;
 }

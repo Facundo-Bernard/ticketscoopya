@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchTickets, saveTicket, deleteTicket } from '../../REDUX/ticketsSlice'
+import { fetchTickets, saveTicket, deleteTicket, markTicketAsRead } from '../../REDUX/ticketsSlice'
 import type { AppDispatch, RootState } from '../../REDUX/store'
 import { ModalTicket, ModalConfirmarEliminar } from '../EDITMODAL'
 import { TicketCreator } from '../CREATEMODAL'
 import type { Ticket } from '../../TYPES'
 import { TICKET_COLUMNS } from '../../TYPES'
-import { useModal } from '../../hooks'
+import { useModal, useTicketStream } from '../../hooks'
 import MenuHeader from './MenuHeader'
 import BoardColumn from './BoardColumn'
 
@@ -18,6 +18,9 @@ interface TicketModalData {
 }
 
 export default function Menu() {
+  // Escucha de tickets en tiempo real vía Server-Sent Events y notificaciones (solo operadores)
+  useTicketStream()
+
   const { items: tickets, status, error } = useSelector((state: RootState) => state.tickets)
   const dispatch = useDispatch<AppDispatch>()
   const [showFinished, setShowFinished] = useState(false)
@@ -47,6 +50,13 @@ export default function Menu() {
   } = useModal<Ticket>()
 
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleOpenTicket = (ticket: Ticket, isEditing: boolean = false) => {
+    if (ticket.leido === false) {
+      dispatch(markTicketAsRead(ticket.id))
+    }
+    openDetailModal({ ticket: { ...ticket, leido: true }, isEditing })
+  }
 
   const visibleTickets = showFinished
     ? tickets.filter((ticket) => {
@@ -106,8 +116,8 @@ export default function Menu() {
               errorMessage={error}
               showFinished={showFinished}
               onCreateTicket={openCreateModal}
-              onEditTicket={(ticket) => openDetailModal({ ticket, isEditing: true })}
-              onViewTicket={(ticket) => openDetailModal({ ticket, isEditing: false })}
+              onEditTicket={(ticket) => handleOpenTicket(ticket, true)}
+              onViewTicket={(ticket) => handleOpenTicket(ticket, false)}
               onDeleteTicket={openDeleteModal}
             />
           ))}

@@ -14,6 +14,7 @@ export interface BackendTicketResponse {
   fecha_creacion: string;
   fecha_edicion?: string | null;
   frecuencia?: any;
+  leido?: boolean;
   columna?: number | string;
   column_id?: number | string;
   columnId?: number | string;
@@ -105,6 +106,7 @@ export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket =
     fechaModificacion: raw.fecha_edicion || raw.fecha_creacion,
     fechaCierre: raw.estado === 'cerrado' || raw.estado === 'resuelto' ? (raw.fecha_edicion || null) : null,
     frecuencia: raw.frecuencia,
+    leido: raw.leido !== undefined ? Boolean(raw.leido) : true,
     columnId: parsedCol,
     columna: parsedCol,
   };
@@ -120,6 +122,12 @@ export const ticketService = {
   // Obtener un ticket puntual por ID
   async getTicketById(id: string | number): Promise<Ticket> {
     const response = await api.get<BackendTicketResponse>(`/tickets/${id}`);
+    return mapBackendToFrontendTicket(response.data);
+  },
+
+  // Marcar ticket como leído en el backend
+  async markAsRead(id: string | number): Promise<Ticket> {
+    const response = await api.patch<BackendTicketResponse>(`/tickets/${id}/read`);
     return mapBackendToFrontendTicket(response.data);
   },
 
@@ -145,6 +153,13 @@ export const ticketService = {
         formData.append('files', file);
       });
     }
+    if (input.frecuencia && input.frecuencia.periodo && input.frecuencia.periodo !== 'No recurrente') {
+      const frecuenciaPayload = {
+        numero: Number(input.frecuencia.numero) || 1,
+        periodo: input.frecuencia.periodo,
+      };
+      formData.append('frecuencia', JSON.stringify(frecuenciaPayload));
+    }
 
     const response = await api.post<BackendTicketResponse>('/tickets/', formData, {
       headers: {
@@ -165,7 +180,16 @@ export const ticketService = {
     if (input.prioridad !== undefined) payload.prioridad = input.prioridad.toLowerCase();
     if (input.colaborador !== undefined) payload.asignar = input.colaborador;
     if (input.asignar !== undefined) payload.asignar = input.asignar;
-    if (input.frecuencia !== undefined) payload.frecuencia = input.frecuencia;
+    if (input.frecuencia !== undefined) {
+      if (input.frecuencia && input.frecuencia.periodo && input.frecuencia.periodo !== 'No recurrente') {
+        payload.frecuencia = {
+          numero: Number(input.frecuencia.numero) || 1,
+          periodo: input.frecuencia.periodo,
+        };
+      } else {
+        payload.frecuencia = null;
+      }
+    }
     if (input.columnId !== undefined || input.columna !== undefined) {
       const col = input.columnId ?? input.columna;
       const numCol = typeof col === 'number' ? col : isNaN(Number(col)) ? col : Number(col);

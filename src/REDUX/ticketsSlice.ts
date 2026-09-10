@@ -80,6 +80,17 @@ export const deleteTicket = createAsyncThunk<string | number, string | number, {
   },
 )
 
+export const markTicketAsRead = createAsyncThunk<Ticket, string | number, { rejectValue: string }>(
+  'tickets/markAsRead',
+  async (ticketId, { rejectWithValue }) => {
+    try {
+      return await ticketService.markAsRead(ticketId)
+    } catch (error) {
+      return rejectWithValue(messageFromError(error))
+    }
+  },
+)
+
 const toStoredTicket = (ticket: Ticket, current?: StoredTicket): StoredTicket => {
   const explicit = ticket.columnId ?? ticket.columna ?? current?.columnId;
   let resolved: number | undefined;
@@ -124,6 +135,15 @@ const ticketsSlice = createSlice({
       const index = state.items.findIndex((ticket) => ticket.id === action.payload.id)
 
       if (index !== -1) {
+        state.items[index] = toStoredTicket(action.payload, state.items[index])
+      }
+    },
+    addTicketFromStream(state, action: PayloadAction<Ticket>) {
+      const stored = toStoredTicket(action.payload)
+      const index = state.items.findIndex((ticket) => String(ticket.id) === String(stored.id))
+      if (index === -1) {
+        state.items.unshift(stored)
+      } else {
         state.items[index] = toStoredTicket(action.payload, state.items[index])
       }
     },
@@ -183,8 +203,21 @@ const ticketsSlice = createSlice({
       .addCase(deleteTicket.rejected, (state, action) => {
         state.error = action.payload ?? 'No se pudo eliminar el ticket.'
       })
+      .addCase(markTicketAsRead.pending, (state, action) => {
+        const ticketId = action.meta.arg
+        const item = state.items.find((ticket) => String(ticket.id) === String(ticketId))
+        if (item) {
+          item.leido = true
+        }
+      })
+      .addCase(markTicketAsRead.fulfilled, (state, action) => {
+        const index = state.items.findIndex((ticket) => String(ticket.id) === String(action.payload.id))
+        if (index !== -1) {
+          state.items[index] = toStoredTicket(action.payload, state.items[index])
+        }
+      })
   },
 })
 
-export const { selectTicket, updateTicket } = ticketsSlice.actions
+export const { selectTicket, updateTicket, addTicketFromStream } = ticketsSlice.actions
 export default ticketsSlice.reducer
