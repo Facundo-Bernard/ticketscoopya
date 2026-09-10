@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ticketService } from '../../SERVICES/ticketService';
 import { getClientEmail, setClientEmail } from '../../UTILS/storageUtils';
 import type { Ticket, Frecuencia } from '../../TYPES';
@@ -31,7 +31,7 @@ export function useTicketForm(
   const [ticketData, setTicketData] = useState<TicketData>(() => ({
     titulo: '',
     descripcion: '',
-    email: isUser ? (getClientEmail() || '') : '',
+    email: getClientEmail() || '',
     asignar: '',
     prioridad: 'media',
     imagenes: [],
@@ -107,11 +107,11 @@ export function useTicketForm(
     }));
   };
 
-  const resetForm = (newColumna?: number) => {
+  const resetForm = useCallback((newColumna?: number) => {
     setTicketData({
       titulo: '',
       descripcion: '',
-      email: isUser ? (getClientEmail() || '') : '',
+      email: getClientEmail() || '',
       asignar: '',
       prioridad: 'media',
       imagenes: [],
@@ -120,7 +120,7 @@ export function useTicketForm(
     });
     setErrorMessage(null);
     setSuccessMessage(null);
-  };
+  }, [isUser, initialCol]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,8 +141,8 @@ export function useTicketForm(
         frecuencia: isUser ? undefined : ticketData.frecuencia,
       });
 
-      // Si es cliente, persistir el email en LocalStorage para futuras visitas
-      if (isUser && ticketData.email) {
+      // Persistir el email en LocalStorage para futuras creaciones (tanto usuario como panel central)
+      if (ticketData.email) {
         setClientEmail(ticketData.email);
       }
 
@@ -152,11 +152,11 @@ export function useTicketForm(
           : `¡Ticket creado con éxito! Identificador: ${nuevoTicket.identificador || nuevoTicket.id}`
       );
       
-      // Limpiar formulario después del envío exitoso (manteniendo el email del cliente)
+      // Limpiar formulario después del envío exitoso (manteniendo el email persistido)
       setTicketData({
         titulo: '',
         descripcion: '',
-        email: isUser ? (getClientEmail() || ticketData.email || '') : '',
+        email: getClientEmail() || ticketData.email || '',
         asignar: '',
         prioridad: 'media',
         imagenes: [],

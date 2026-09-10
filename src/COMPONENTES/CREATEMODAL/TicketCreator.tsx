@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Alert } from 'react-bootstrap';
 import { useTicketForm } from './useTicketForm';
 import { TICKET_COLUMNS, type Ticket } from '../../TYPES';
@@ -26,8 +26,18 @@ export const TicketCreator: React.FC<TicketCreatorModalProps> = ({
     handleImageUpload,
     handleRemoveImage,
     handleFrecuenciaChange,
+    resetForm,
     handleSubmit
   } = useTicketForm({ initialColumna, onSuccess });
+
+  const prevIsOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      resetForm(initialColumna);
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, initialColumna, resetForm]);
 
   if (!isOpen) return null;
 
