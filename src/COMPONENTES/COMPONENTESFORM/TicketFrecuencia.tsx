@@ -3,7 +3,7 @@ import { PERIODOS_FRECUENCIA } from '../TICKETMENU/ticketStates';
 import type { Frecuencia, PeriodoFrecuencia } from '../../TYPES';
 
 interface TicketFrecuenciaProps {
-  frecuencia?: Frecuencia;
+  frecuencia?: Frecuencia | null;
   onChange: (frecuencia: Frecuencia | undefined) => void;
   disabled?: boolean;
 }

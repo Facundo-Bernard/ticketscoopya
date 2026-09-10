@@ -8,7 +8,7 @@ export interface TicketEditFormData {
   colaborador: string;
   prioridad: string;
   columnId: number;
-  frecuencia?: Frecuencia;
+  frecuencia?: Frecuencia | null;
 }
 
 export function useTicketEdit(
@@ -41,7 +41,7 @@ export function useTicketEdit(
         colaborador: ticket.colaborador || '',
         prioridad: ticket.prioridad || 'media',
         columnId: colNum,
-        frecuencia: ticket.frecuencia
+        frecuencia: ticket.frecuencia || undefined
       });
       setImagenes(ticket.imagenes || []);
       setErrorMessage(null);
