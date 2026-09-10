@@ -76,9 +76,10 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
                 : '',
               description: ticket.descripcion,
               priority: ticket.prioridad,
-              frequency: ticket.frecuencia
+              frequency: ticket.frecuencia && ticket.frecuencia.periodo && ticket.frecuencia.periodo !== 'No recurrente'
                 ? `Cada ${ticket.frecuencia.numero} ${ticket.frecuencia.periodo.toLowerCase()}`
                 : undefined,
+              isNew: ticket.leido === false,
             };
 
             return (

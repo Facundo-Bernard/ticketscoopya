@@ -26,11 +26,11 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
 
   return (
     <div>
-      <div className="d-flex align-items-center gap-2 mb-2">
+      <div className="d-flex align-items-baseline gap-2 mb-2">
         {ticket.identificador && (
-          <span className="badge bg-dark font-monospace">{ticket.identificador}</span>
+          <span className="badge bg-dark font-monospace flex-shrink-0">{ticket.identificador}</span>
         )}
-        <h4 className="mb-0">{ticket.titulo}</h4>
+        <h4 className="mb-0 text-break">{ticket.titulo}</h4>
       </div>
 
       <div className="mb-3 d-flex flex-wrap gap-2 align-items-center mt-2">
