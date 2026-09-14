@@ -3,7 +3,9 @@ import type { Ticket, TicketLock } from '../TYPES'
 import {
   fetchTickets,
   fetchTicketById,
+  createTicket,
   saveTicket,
+  saveTicketWithImages,
   deleteTicket,
   markTicketAsRead,
   lockTicket,
@@ -15,7 +17,9 @@ import {
 export {
   fetchTickets,
   fetchTicketById,
+  createTicket,
   saveTicket,
+  saveTicketWithImages,
   deleteTicket,
   markTicketAsRead,
   lockTicket,
@@ -209,6 +213,26 @@ const ticketsSlice = createSlice({
         state.status = 'failed'
         state.error = action.payload ?? 'No se pudo cargar el ticket.'
       })
+      .addCase(createTicket.pending, (state) => {
+        state.error = null
+      })
+      .addCase(createTicket.fulfilled, (state, action) => {
+        const idStr = String(action.payload.id)
+        const index = state.items.findIndex((ticket) => String(ticket.id) === idStr)
+        const storedTicket = toStoredTicket(action.payload, state.items[index])
+
+        if (index === -1) {
+          state.items.unshift(storedTicket)
+          if (!state.recentIds.includes(idStr)) {
+            state.recentIds.push(idStr)
+          }
+        } else {
+          state.items[index] = storedTicket
+        }
+      })
+      .addCase(createTicket.rejected, (state, action) => {
+        state.error = action.payload ?? 'No se pudo crear el ticket.'
+      })
       .addCase(saveTicket.pending, (state) => {
         state.error = null
       })
@@ -225,6 +249,20 @@ const ticketsSlice = createSlice({
       })
       .addCase(saveTicket.rejected, (state, action) => {
         state.error = action.payload ?? 'No se pudieron guardar los cambios.'
+      })
+      .addCase(saveTicketWithImages.fulfilled, (state, action) => {
+        const idStr = String(action.payload.id)
+        const index = state.items.findIndex((ticket) => ticket.id === action.payload.id)
+
+        if (index !== -1) {
+          state.items[index] = toStoredTicket(action.payload, state.items[index])
+          if (!state.updatedIds.includes(idStr)) {
+            state.updatedIds.push(idStr)
+          }
+        }
+      })
+      .addCase(saveTicketWithImages.rejected, (state, action) => {
+        state.error = action.payload ?? 'No se pudieron guardar los cambios o las imágenes.'
       })
       .addCase(deleteTicket.fulfilled, (state, action) => {
         const targetId = String(action.payload)

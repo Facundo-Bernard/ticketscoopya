@@ -1,9 +1,9 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
-import type { Ticket, TicketLock } from '../TYPES'
-import { ticketService } from '../SERVICES/ticketService'
+import type { CreateTicketInput, Ticket, TicketLock } from '../TYPES'
+import { ticketService, type TicketImageChanges } from '../SERVICES/ticketService'
+import { messageFromError } from './errorUtils'
 
-export const messageFromError = (error: unknown): string =>
-  error instanceof Error ? error.message : 'No se pudo completar la solicitud.'
+export { messageFromError } from './errorUtils'
 
 /**
  * 1. Obtener todos los tickets
@@ -33,6 +33,18 @@ export const fetchTicketById = createAsyncThunk<Ticket, string, { rejectValue: s
   },
 )
 
+/** Crear un ticket y guardar la respuesta en el estado compartido. */
+export const createTicket = createAsyncThunk<Ticket, CreateTicketInput, { rejectValue: string }>(
+  'tickets/createTicket',
+  async (input, { rejectWithValue }) => {
+    try {
+      return await ticketService.createTicket(input)
+    } catch (error) {
+      return rejectWithValue(messageFromError(error))
+    }
+  },
+)
+
 /**
  * 3. Guardar cambios en un ticket existente
  */
@@ -50,6 +62,47 @@ export const saveTicket = createAsyncThunk<Ticket, Ticket, { rejectValue: string
         columnId: ticket.columnId,
         columna: ticket.columna || ticket.columnId,
       })
+
+      return {
+        ...updatedTicket,
+        columnId: updatedTicket.columnId || ticket.columnId,
+      }
+    } catch (error) {
+      return rejectWithValue(messageFromError(error))
+    }
+  },
+)
+
+/**
+ * Guarda los campos del ticket y sincroniza sus imágenes con los endpoints dedicados.
+ * El backend no permite adjuntos dentro del PATCH JSON del ticket.
+ */
+export const saveTicketWithImages = createAsyncThunk<
+  Ticket,
+  { ticket: Ticket; imageChanges: TicketImageChanges },
+  { rejectValue: string }
+>(
+  'tickets/saveTicketWithImages',
+  async ({ ticket, imageChanges }, { rejectWithValue }) => {
+    try {
+      let updatedTicket = await ticketService.updateTicket(ticket.id, {
+        titulo: ticket.titulo,
+        descripcion: ticket.descripcion,
+        estado: ticket.estado,
+        prioridad: ticket.prioridad,
+        colaborador: ticket.colaborador,
+        frecuencia: ticket.frecuencia,
+        columnId: ticket.columnId,
+        columna: ticket.columna || ticket.columnId,
+      })
+
+      for (const fileId of imageChanges.removedFileIds) {
+        updatedTicket = await ticketService.deleteTicketImage(ticket.id, fileId)
+      }
+
+      if (imageChanges.newFiles.length > 0) {
+        updatedTicket = await ticketService.uploadTicketImages(ticket.id, imageChanges.newFiles)
+      }
 
       return {
         ...updatedTicket,

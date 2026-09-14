@@ -1,46 +1,39 @@
-import { useState, useEffect, useCallback } from 'react';
-import { catalogService } from '../SERVICES/catalogService';
-import type { OptionItem } from '../TYPES';
+import { useEffect, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '../REDUX/store';
+import { fetchCatalogs } from '../REDUX/catalogThunks';
 
 export function useCatalogs(autoLoad: boolean = true) {
-  const [estados, setEstados] = useState<OptionItem[]>([]);
-  const [prioridades, setPrioridades] = useState<OptionItem[]>([]);
-  const [asignables, setAsignables] = useState<OptionItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { estados, prioridades, asignables, status, error } = useSelector(
+    (state: RootState) => state.catalogs,
+  );
 
-  const loadCatalogs = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [resEstados, resPrioridades, resAsignables] = await Promise.all([
-        catalogService.getEstados(),
-        catalogService.getPrioridades(),
-        catalogService.getAsignables()
-      ]);
-      setEstados(resEstados);
-      setPrioridades(resPrioridades);
-      setAsignables(resAsignables);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Error al cargar catálogos';
-      setError(msg);
-      console.error('Error loading catalogs:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const loadCatalogs = useCallback(
+    async (force: boolean = false) => {
+      try {
+        return await dispatch(fetchCatalogs({ force })).unwrap();
+      } catch (err: any) {
+        if (err?.name === 'ConditionError') {
+          return;
+        }
+        throw err;
+      }
+    },
+    [dispatch],
+  );
 
   useEffect(() => {
-    if (autoLoad) {
-      loadCatalogs();
+    if (autoLoad && status === 'idle') {
+      void loadCatalogs();
     }
-  }, [autoLoad, loadCatalogs]);
+  }, [autoLoad, loadCatalogs, status]);
 
   return {
     estados,
     prioridades,
     asignables,
-    isLoading,
+    isLoading: status === 'loading',
     error,
     reloadCatalogs: loadCatalogs
   };
