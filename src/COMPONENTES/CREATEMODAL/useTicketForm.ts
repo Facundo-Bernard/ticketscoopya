@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ticketService } from '../../SERVICES/ticketService';
+import { useDispatch } from 'react-redux';
 import { getClientEmail, setClientEmail } from '../../UTILS/storageUtils';
-import type { Ticket, Frecuencia } from '../../TYPES';
+import type { CreateTicketInput, Ticket, Frecuencia } from '../../TYPES';
+import type { AppDispatch } from '../../REDUX/store';
+import { createTicket } from '../../REDUX/ticketThunks';
 
 export interface TicketData {
   titulo: string;
@@ -27,6 +29,7 @@ export function useTicketForm(
   const isUser = typeof options === 'object' && options !== null ? !!options.isUser : false;
   const initialCol = typeof options === 'number' ? options : (options?.initialColumna || 1);
   const onSuccess = typeof options === 'object' && options !== null ? options.onSuccess : onSuccessCallback;
+  const dispatch = useDispatch<AppDispatch>();
 
   const [ticketData, setTicketData] = useState<TicketData>(() => ({
     titulo: '',
@@ -129,7 +132,7 @@ export function useTicketForm(
     setSuccessMessage(null);
 
     try {
-      const nuevoTicket = await ticketService.createTicket({
+      const ticketInput: CreateTicketInput = {
         titulo: ticketData.titulo,
         descripcion: ticketData.descripcion,
         correo: ticketData.email,
@@ -139,7 +142,8 @@ export function useTicketForm(
         columnId: isUser ? 1 : ticketData.columna,
         columna: isUser ? 1 : ticketData.columna,
         frecuencia: isUser ? undefined : ticketData.frecuencia,
-      });
+      };
+      const nuevoTicket = await dispatch(createTicket(ticketInput)).unwrap();
 
       // Persistir el email en LocalStorage para futuras creaciones (tanto usuario como panel central)
       if (ticketData.email) {
@@ -167,23 +171,12 @@ export function useTicketForm(
       if (onSuccess) {
         onSuccess(nuevoTicket);
       }
-    } catch (err: any) {
-      let msg = err.response?.data?.message || err.message || 'Error al conectar con el servidor para crear el ticket';
-      
-      if (err.response?.data?.detail) {
-        const detail = err.response.data.detail;
-        if (typeof detail === 'string') {
-          msg = detail;
-        } else if (Array.isArray(detail)) {
-          msg = detail
-            .map((item: any) => {
-              const field = item.loc ? item.loc[item.loc.length - 1] : '';
-              return `${field ? field + ': ' : ''}${item.msg}`;
-            })
-            .join(', ');
-        }
-      }
-
+    } catch (err: unknown) {
+      const msg = typeof err === 'string'
+        ? err
+        : err instanceof Error
+          ? err.message
+          : 'Error al conectar con el servidor para crear el ticket';
       setErrorMessage(msg);
       console.error('Error al crear ticket:', err);
     } finally {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Ticket, Frecuencia } from '../../../TYPES';
+import type { TicketImageChanges } from '../../../SERVICES/ticketService';
 
 export interface TicketEditFormData {
   titulo: string;
@@ -13,7 +14,7 @@ export interface TicketEditFormData {
 
 export function useTicketEdit(
   ticket: Ticket | null,
-  onSave?: (updatedTicket: Ticket) => void | Promise<void>
+  onSave?: (updatedTicket: Ticket, imageChanges: TicketImageChanges) => void | Promise<void>
 ) {
   const [formData, setFormData] = useState<TicketEditFormData>({
     titulo: '',
@@ -25,7 +26,9 @@ export function useTicketEdit(
     frecuencia: undefined
   });
 
-  const [imagenes, setImagenes] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -43,7 +46,9 @@ export function useTicketEdit(
         columnId: colNum,
         frecuencia: ticket.frecuencia || undefined
       });
-      setImagenes(ticket.imagenes || []);
+      setExistingImages(ticket.imagenes || []);
+      setNewImages([]);
+      setRemovedImageIds([]);
       setErrorMessage(null);
     }
   }, [ticket]);
@@ -63,22 +68,29 @@ export function useTicketEdit(
   };
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    if (e.target.files) {
-      Array.from(e.target.files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === 'string') {
-            setImagenes((prev) => [...prev, reader.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+    const files = e.target.files;
+    if (files) {
+      setNewImages((current) => [...current, ...Array.from(files)]);
       e.target.value = '';
     }
   };
 
   const handleImageRemove = (idx: number): void => {
-    setImagenes((prev) => prev.filter((_, i) => i !== idx));
+    if (idx >= existingImages.length) {
+      const newImageIndex = idx - existingImages.length;
+      setNewImages((current) => current.filter((_, index) => index !== newImageIndex));
+      return;
+    }
+
+    const imageUrl = existingImages[idx];
+    const fileId = imageUrl.match(/\/files\/([^/?#]+)/)?.[1] || (imageUrl.length === 24 && !imageUrl.includes('/') ? imageUrl : null);
+    if (!fileId) {
+      setErrorMessage('No se pudo identificar la imagen para eliminarla.');
+      return;
+    }
+
+    setExistingImages((current) => current.filter((_, index) => index !== idx));
+    setRemovedImageIds((current) => current.includes(fileId) ? current : [...current, fileId]);
   };
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -99,15 +111,25 @@ export function useTicketEdit(
       columnId: formData.columnId,
       columna: formData.columnId,
       frecuencia: formData.frecuencia,
-      imagenes,
+      imagenes: existingImages,
       fechaModificacion: now,
       fechaCierre: formData.estado === 'cerrado' || formData.estado === 'resuelto' ? now : null
     };
 
     try {
-      await onSave?.(ticketModificado);
+      await onSave?.(ticketModificado, {
+        newFiles: newImages,
+        removedFileIds: removedImageIds,
+      });
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Error al guardar los cambios';
+      const msg =
+        typeof err === 'string'
+          ? err
+          : err.response?.data?.detail
+            ? (Array.isArray(err.response.data.detail)
+                ? err.response.data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+                : String(err.response.data.detail))
+            : err.response?.data?.message || err.message || 'Error al guardar los cambios';
       setErrorMessage(msg);
       console.error('Error al editar ticket:', err);
     } finally {
@@ -119,7 +141,7 @@ export function useTicketEdit(
 
   return {
     formData,
-    imagenes,
+    imagenes: [...existingImages, ...newImages],
     isSaving,
     errorMessage,
     creatorEmail,

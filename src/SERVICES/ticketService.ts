@@ -1,5 +1,5 @@
 import { api, getFileUrl } from './api';
-import type { Ticket } from '../TYPES';
+import type { CreateTicketInput, Ticket } from '../TYPES';
 
 export interface BackendTicketResponse {
   id: string;
@@ -30,18 +30,6 @@ export interface TicketFilterParams {
   limit?: number;
 }
 
-export interface CreateTicketInput {
-  titulo: string;
-  descripcion: string;
-  correo: string;
-  prioridad?: string;
-  asignar?: string;
-  files?: File[];
-  frecuencia?: any;
-  columnId?: number | string;
-  columna?: number | string;
-}
-
 export interface UpdateTicketInput {
   titulo?: string;
   descripcion?: string;
@@ -52,6 +40,11 @@ export interface UpdateTicketInput {
   frecuencia?: any;
   columnId?: number | string;
   columna?: number | string;
+}
+
+export interface TicketImageChanges {
+  newFiles: File[];
+  removedFileIds: string[];
 }
 
 type TicketListPayload =
@@ -201,14 +194,32 @@ export const ticketService = {
     return mapBackendToFrontendTicket(response.data);
   },
 
+  // Adjuntar imágenes a un ticket existente mediante el endpoint multipart dedicado.
+  async uploadTicketImages(ticketId: string | number, files: File[]): Promise<Ticket> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+
+    const response = await api.post<BackendTicketResponse>(
+      `/tickets/${ticketId}/images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+    return mapBackendToFrontendTicket(response.data);
+  },
+
   // Eliminar un ticket completo
   async deleteTicket(id: string | number): Promise<void> {
     await api.delete(`/tickets/${id}`);
   },
 
   // Eliminar una imagen específica de un ticket
-  async deleteTicketImage(ticketId: string | number, fileId: string): Promise<void> {
-    await api.delete(`/tickets/${ticketId}/images/${fileId}`);
+  async deleteTicketImage(ticketId: string | number, fileId: string): Promise<Ticket> {
+    const response = await api.delete<BackendTicketResponse>(`/tickets/${ticketId}/images/${fileId}`);
+    return mapBackendToFrontendTicket(response.data);
   },
 
   // Bloquear ticket para edición exclusiva (concurrencia)

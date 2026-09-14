@@ -1,6 +1,7 @@
 import React from 'react';
 import { Alert } from 'react-bootstrap';
 import type { Ticket } from '../../../TYPES';
+import type { TicketImageChanges } from '../../../SERVICES/ticketService';
 import { useTicketEdit } from './useTicketEdit';
 import {
   TicketFormCampos,
@@ -12,7 +13,7 @@ import {
 export interface TicketEditViewProps {
   ticket: Ticket;
   onCancel: () => void;
-  onSave: (updatedTicket: Ticket) => void | Promise<void>;
+  onSave: (updatedTicket: Ticket, imageChanges: TicketImageChanges) => void | Promise<void>;
 }
 
 export const TicketEditView: React.FC<TicketEditViewProps> = ({
