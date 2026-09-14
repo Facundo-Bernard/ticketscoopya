@@ -4,7 +4,7 @@ import type { AppDispatch } from '../../../REDUX/store'
 import { unmarkTicketAsUpdated } from '../../../REDUX/ticketsSlice'
 import CardActionsMenu from './CardActionsMenu'
 import { getPriorityBadge } from './cardUtils'
-import { LockIcon } from '../../COMUN/Icons'
+import { LockIcon, PaperclipIcon } from '../../COMUN/Icons'
 
 export type TicketCard = {
   id: string
@@ -17,6 +17,8 @@ export type TicketCard = {
   isNew?: boolean
   lockedBy?: string
   isLockedByOther?: boolean
+  hasImages?: boolean
+  imagesCount?: number
 }
 
 export default function Card({ 
@@ -145,30 +147,44 @@ export default function Card({
           </span>
         </div>
 
-        {card.date && (
-          <div 
-            className="d-flex align-items-center gap-1 text-secondary small flex-shrink-0"
-            title={`Fecha de creación: ${card.date}`}
-          >
-            <svg 
-              width="13" 
-              height="13" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="text-secondary opacity-75"
+        <div className="d-flex align-items-center gap-2 flex-shrink-0">
+          {card.hasImages && (
+            <span 
+              className="ticket-attachment-indicator"
+              title={card.imagesCount && card.imagesCount > 1 ? `${card.imagesCount} archivos adjuntos` : 'Tiene archivos adjuntos'}
             >
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <span>{card.date}</span>
-          </div>
-        )}
+              <PaperclipIcon size={12} className="text-secondary" />
+              {card.imagesCount && card.imagesCount > 1 ? (
+                <span className="fw-semibold" style={{ fontSize: '11px' }}>{card.imagesCount}</span>
+              ) : null}
+            </span>
+          )}
+
+          {card.date && (
+            <div 
+              className="d-flex align-items-center gap-1 text-secondary small flex-shrink-0"
+              title={`Fecha de creación: ${card.date}`}
+            >
+              <svg 
+                width="13" 
+                height="13" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="text-secondary opacity-75"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>{card.date}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

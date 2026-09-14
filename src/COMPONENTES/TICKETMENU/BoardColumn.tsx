@@ -99,6 +99,8 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
               isNew: ticket.leido === false,
               lockedBy: lock?.usuario,
               isLockedByOther,
+              hasImages: Boolean(ticket.imagenes && ticket.imagenes.length > 0),
+              imagesCount: ticket.imagenes ? ticket.imagenes.length : 0,
             };
 
             return (

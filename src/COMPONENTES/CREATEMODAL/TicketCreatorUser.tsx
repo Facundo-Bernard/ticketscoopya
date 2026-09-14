@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { Alert } from 'react-bootstrap';
+import { toast } from 'sonner';
 import { useTicketForm } from './useTicketForm';
 import { TicketFormCampos, TicketFormImagenes, TicketFormFooter } from '../COMPONENTESFORM';
+import { AlertCircleIcon } from '../COMUN/Icons';
 
 export function TicketCreatorUser() {
   const {
@@ -17,6 +20,64 @@ export function TicketCreatorUser() {
   } = useTicketForm({ isUser: true });
 
   const trackingId = successMessage ? successMessage.split(':').pop()?.trim() : null;
+
+  // Notificar al usuario sobre los nuevos formatos de archivo admitidos
+  useEffect(() => {
+    if (successMessage) return;
+
+    // Limpiar claves viejas si quedaron guardadas en el navegador
+    localStorage.removeItem('coopya_attachment_announcement_v1');
+
+    const timer = setTimeout(() => {
+      toast('Novedad: Nuevos formatos admitidos', {
+        id: 'attachment-announcement',
+        icon: (
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              backgroundColor: '#fee2e2',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: '#dc2626',
+              marginRight: '10px',
+            }}
+          >
+            <AlertCircleIcon size={16} />
+          </div>
+        ),
+        style: {
+          backgroundColor: '#fef2f2',
+          borderColor: '#fecaca',
+          color: '#991b1b',
+          boxShadow: '0 8px 24px -4px rgba(220, 38, 38, 0.12)',
+        },
+        description: (
+          <div className="mt-1">
+            <div className="mb-2 lh-sm" style={{ fontSize: '12.5px', color: '#7f1d1d' }}>
+              Ahora podés adjuntar documentos PDF, planillas Excel o CSV y textos planos además de fotos.
+            </div>
+            <div className="mt-2">
+              <button
+                type="button"
+                className="btn btn-sm btn-coopya-red px-3 py-1 fw-semibold"
+                style={{ fontSize: '12px' }}
+                onClick={() => toast.dismiss('attachment-announcement')}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        ),
+        duration: 14000,
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [successMessage]);
 
   return (
     <div className="min-vh-100 d-flex flex-column">

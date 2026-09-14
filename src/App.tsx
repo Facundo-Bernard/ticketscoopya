@@ -1,8 +1,23 @@
 
-import RUTASNAV from './COMPONENTES/RUTASNAV'
+import { Toaster } from 'sonner';
+import RUTASNAV from './COMPONENTES/RUTASNAV';
 
 function App() {
-  return <RUTASNAV />
+  return (
+    <>
+      <RUTASNAV />
+      <Toaster 
+        richColors 
+        position="bottom-right" 
+        closeButton 
+        toastOptions={{
+          style: {
+            fontFamily: 'inherit',
+          },
+        }}
+      />
+    </>
+  );
 }
 
-export default App
+export default App;
