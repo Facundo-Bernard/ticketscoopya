@@ -25,6 +25,18 @@ export interface Ticket {
   columna?: number | string;
 }
 
+export interface CreateTicketInput {
+  titulo: string;
+  descripcion: string;
+  correo: string;
+  prioridad?: string;
+  asignar?: string;
+  files?: File[];
+  frecuencia?: Frecuencia;
+  columnId?: number | string;
+  columna?: number | string;
+}
+
 export interface ColumnOption {
   id: number;
   title: string;
@@ -49,3 +61,5 @@ export interface TicketLock {
   usuario: string;
   expiraEnSegundos?: number;
 }
+
+export * from './comment';

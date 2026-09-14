@@ -214,3 +214,206 @@ export const AlertTriangleIcon: React.FC<IconProps> = ({ size = 16, className = 
     <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
+
+/** Clip / Adjunto (Paperclip / Attachment) */
+export const PaperclipIcon: React.FC<IconProps> = ({ size = 13, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+  </svg>
+);
+
+/** Icono de archivo PDF */
+export const PdfIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <path d="M9 15v-4h2a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H9z" />
+  </svg>
+);
+
+/** Icono de archivo Excel / Hoja de cálculo */
+export const ExcelIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <path d="M8 13l4 4m0-4l-4 4" />
+  </svg>
+);
+
+/** Icono de archivo CSV / Tabla */
+export const CsvIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="8" y1="13" x2="16" y2="13" />
+    <line x1="8" y1="17" x2="16" y2="17" />
+  </svg>
+);
+
+/** Icono de archivo de texto plano (TXT) */
+export const TextFileIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <line x1="10" y1="9" x2="8" y2="9" />
+  </svg>
+);
+
+/** Icono genérico de archivo */
+export const FileGenericIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+
+/** Icono de Descarga (Download) */
+export const DownloadIcon: React.FC<IconProps> = ({ size = 14, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+/** Icono de Enlace Externo (External Link / Abrir en pestaña) */
+export const ExternalLinkIcon: React.FC<IconProps> = ({ size = 13, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+/** Icono de Chispas / Novedad sutil (Sparkles) */
+export const SparklesIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    strokeWidth={1.8}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
+    <path d="m19 5 .5 1.5a1 1 0 0 0 .6.6L21.5 7.5l-1.4.4a1 1 0 0 0-.6.6L19 10l-.5-1.5a1 1 0 0 0-.6-.6l-1.4-.4 1.4-.4a1 1 0 0 0 .6-.6L19 5Z" />
+  </svg>
+);
+
+/** Icono de Información / Alerta en Círculo (AlertCircle con signo !) */
+export const AlertCircleIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
+/** Icono de Flecha Derecha / Chevron Right */
+export const ChevronRightIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+/** Icono de Envío / Send */
+export const SendIcon: React.FC<IconProps> = ({ size = 14, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
+/** Icono de Comentario / Mensaje */
+export const MessageSquareIcon: React.FC<IconProps> = ({ size = 16, className = '', ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    {...defaultProps}
+    className={`icon-svg flex-shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);

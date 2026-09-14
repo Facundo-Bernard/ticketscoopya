@@ -133,16 +133,57 @@ export function useTicketStream(): void {
       }
     };
 
+    // Handler para nuevo comentario (en vivo sin F5, sin alertas de escritorio)
+    const handleNuevoComentario = (event: MessageEvent) => {
+      try {
+        if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
+        const rawData = JSON.parse(event.data);
+        const ticketId = rawData.ticket_id || rawData.ticketId;
+        const comentario = rawData.comentario || rawData;
+        if (ticketId && comentario) {
+          window.dispatchEvent(
+            new CustomEvent('sse:nuevo_comentario', {
+              detail: { ticket_id: String(ticketId), comentario },
+            })
+          );
+        }
+      } catch (err) {
+        console.error('Error procesando evento SSE nuevo_comentario:', err);
+      }
+    };
+
+    // Handler para comentario eliminado (en vivo sin F5)
+    const handleComentarioEliminado = (event: MessageEvent) => {
+      try {
+        if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
+        const rawData = JSON.parse(event.data);
+        const ticketId = rawData.ticket_id || rawData.ticketId;
+        const commentId = rawData.comment_id || rawData.commentId || rawData.id;
+        if (ticketId && commentId) {
+          window.dispatchEvent(
+            new CustomEvent('sse:comentario_eliminado', {
+              detail: { ticket_id: String(ticketId), comment_id: String(commentId) },
+            })
+          );
+        }
+      } catch (err) {
+        console.error('Error procesando evento SSE comentario_eliminado:', err);
+      }
+    };
+
     // Registro de listeners SSE
     eventSource.addEventListener('nuevo_ticket', handleNuevoTicket as EventListener);
     eventSource.addEventListener('ticket_creado', handleNuevoTicket as EventListener);
-    eventSource.addEventListener('message', handleNuevoTicket as EventListener);
+    // Los eventos sin nombre se atienden únicamente mediante onmessage.
+    // No registrar además addEventListener('message') para evitar procesarlos dos veces.
     eventSource.onmessage = handleNuevoTicket;
 
     eventSource.addEventListener('ticket_actualizado', handleTicketActualizado as EventListener);
     eventSource.addEventListener('ticket_eliminado', handleTicketEliminado as EventListener);
     eventSource.addEventListener('ticket_bloqueado', handleTicketBloqueado as EventListener);
     eventSource.addEventListener('ticket_desbloqueado', handleTicketDesbloqueado as EventListener);
+    eventSource.addEventListener('nuevo_comentario', handleNuevoComentario as EventListener);
+    eventSource.addEventListener('comentario_eliminado', handleComentarioEliminado as EventListener);
 
     eventSource.onerror = (err) => {
       console.warn('Conexión SSE interrumpida. EventSource reconectará automáticamente.', err);
@@ -152,11 +193,12 @@ export function useTicketStream(): void {
     return () => {
       eventSource.removeEventListener('nuevo_ticket', handleNuevoTicket as EventListener);
       eventSource.removeEventListener('ticket_creado', handleNuevoTicket as EventListener);
-      eventSource.removeEventListener('message', handleNuevoTicket as EventListener);
       eventSource.removeEventListener('ticket_actualizado', handleTicketActualizado as EventListener);
       eventSource.removeEventListener('ticket_eliminado', handleTicketEliminado as EventListener);
       eventSource.removeEventListener('ticket_bloqueado', handleTicketBloqueado as EventListener);
       eventSource.removeEventListener('ticket_desbloqueado', handleTicketDesbloqueado as EventListener);
+      eventSource.removeEventListener('nuevo_comentario', handleNuevoComentario as EventListener);
+      eventSource.removeEventListener('comentario_eliminado', handleComentarioEliminado as EventListener);
       eventSource.close();
     };
   }, [dispatch]);
