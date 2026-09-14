@@ -9,6 +9,7 @@ import TicketEditView from './EDITAR/TicketEditView';
 import { useModalTicketOperations } from './modalTicketOperations';
 import { LockIcon } from '../COMUN/Icons';
 import type { Ticket } from '../../TYPES';
+import type { TicketImageChanges } from '../../SERVICES/ticketService';
 
 export interface ModalTicketProps {
   ticket: Ticket | null;
@@ -16,7 +17,7 @@ export interface ModalTicketProps {
   isClosing?: boolean;
   initialEditing?: boolean;
   onClose: () => void;
-  onTicketUpdated?: (ticket: Ticket) => void | Promise<void>;
+  onTicketUpdated?: (ticket: Ticket, imageChanges?: TicketImageChanges) => void | Promise<void>;
   onDelete?: (ticket: Ticket) => void;
   onLock?: (ticket: Ticket) => Promise<boolean>;
   onUnlock?: (ticket: Ticket) => Promise<void>;
@@ -85,14 +86,11 @@ export const ModalTicket: React.FC<ModalTicketProps> = ({
               />
             ) : (
               <>
-                <div className="modal-header d-flex justify-content-between align-items-center py-3 bg-white border-bottom">
-                  <h5 className="modal-title fw-bold mb-0 text-dark">
-                    Detalle del Ticket
-                  </h5>
+                <div className="d-flex justify-content-end align-items-center pt-3 pe-3 pb-0 bg-white">
                   <button type="button" className="btn-close" onClick={handleModalClose} aria-label="Cerrar"></button>
                 </div>
 
-                <div className="modal-body p-4">
+                <div className="modal-body px-4 pb-4 pt-1">
                   {lockError && (
                     <Alert variant="warning" dismissible onClose={clearLockError} className="d-flex align-items-center gap-2 mb-3">
                       <LockIcon size={20} className="text-warning-emphasis flex-shrink-0" />

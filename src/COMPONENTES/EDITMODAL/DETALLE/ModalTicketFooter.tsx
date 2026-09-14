@@ -5,7 +5,7 @@ export interface ModalTicketFooterProps {
   isTerminado?: boolean;
   isLockedByOther?: boolean;
   lockedBy?: string;
-  onClose: () => void;
+  onClose?: () => void;
   onEdit: () => void;
   onDelete?: () => void;
   onReactivar: () => void;
@@ -15,7 +15,6 @@ export const ModalTicketFooter: React.FC<ModalTicketFooterProps> = ({
   isTerminado = false,
   isLockedByOther = false,
   lockedBy,
-  onClose,
   onEdit,
   onDelete,
   onReactivar,
@@ -38,13 +37,6 @@ export const ModalTicketFooter: React.FC<ModalTicketFooterProps> = ({
       )}
 
       <div className="d-flex align-items-center gap-2">
-        <button 
-          type="button" 
-          className="btn btn-outline-secondary px-4 fw-medium" 
-          onClick={onClose}
-        >
-          Cerrar
-        </button>
 
         {isTerminado ? (
           <button 

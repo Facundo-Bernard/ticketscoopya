@@ -1,5 +1,6 @@
 import { useState, useEffect, startTransition } from 'react';
 import type { Ticket } from '../../TYPES';
+import type { TicketImageChanges } from '../../SERVICES/ticketService';
 
 export interface ModalTicketOperationsProps {
   ticket: Ticket | null;
@@ -8,7 +9,7 @@ export interface ModalTicketOperationsProps {
   isLockedByOther?: boolean;
   lockedBy?: string;
   onClose: () => void;
-  onTicketUpdated?: (ticket: Ticket) => void | Promise<void>;
+  onTicketUpdated?: (ticket: Ticket, imageChanges?: TicketImageChanges) => void | Promise<void>;
   onLock?: (ticket: Ticket) => Promise<boolean>;
   onUnlock?: (ticket: Ticket) => Promise<void>;
 }
@@ -102,8 +103,8 @@ export function useModalTicketOperations({
     }
   };
 
-  const handleSave = async (ticketModificado: Ticket): Promise<void> => {
-    await onTicketUpdated?.(ticketModificado);
+  const handleSave = async (ticketModificado: Ticket, imageChanges: TicketImageChanges): Promise<void> => {
+    await onTicketUpdated?.(ticketModificado, imageChanges);
     // Nota: El backend libera el bloqueo automáticamente al guardar la actualización y emite ticket_desbloqueado
     setIsEditing(false);
     onClose();
