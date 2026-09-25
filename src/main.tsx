@@ -18,3 +18,13 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
+// Registro de Service Worker para PWA (modo standalone e instalación)
+if ('serviceWorker' in navigator && (window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => console.log('PWA Service Worker activo:', reg.scope))
+      .catch((err) => console.warn('No se pudo registrar Service Worker:', err))
+  })
+}
+
