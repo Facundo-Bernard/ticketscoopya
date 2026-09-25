@@ -72,6 +72,11 @@ export function useTicketStream(): void {
           dispatch(markTicketAsDeleting(ticketId));
           setTimeout(() => {
             dispatch(removeTicketFromStream({ id: ticketId }));
+            window.dispatchEvent(
+              new CustomEvent('tickets:deleted_from_stream', {
+                detail: { ticketId: String(ticketId) },
+              }),
+            );
           }, 400);
         }
       } catch (err) {

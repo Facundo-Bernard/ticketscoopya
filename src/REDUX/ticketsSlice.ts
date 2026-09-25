@@ -117,6 +117,79 @@ const toStoredTicket = (ticket: Ticket, current?: StoredTicket): StoredTicket =>
   };
 }
 
+const upsertTicketInState = (state: TicketsState, ticket: Ticket): StoredTicket => {
+  const stored = toStoredTicket(ticket)
+  const idStr = String(stored.id)
+  const targetCol = stored.columnId
+
+  // 1. Limpiar de otras columnas si cambió de columna
+  for (const colId of Object.keys(state.byColumn)) {
+    const colNum = Number(colId)
+    if (colNum !== targetCol) {
+      const colState = state.byColumn[colNum]
+      if (colState) {
+        const prevLen = colState.items.length
+        colState.items = colState.items.filter((t) => String(t.id) !== idStr)
+        if (colState.items.length < prevLen) {
+          colState.total = Math.max(0, colState.total - 1)
+        }
+      }
+    }
+  }
+
+  // 2. Insertar o actualizar en la columna de destino
+  if (!state.byColumn[targetCol]) {
+    state.byColumn[targetCol] = createDefaultColumn(targetCol)
+  }
+  const colState = state.byColumn[targetCol]
+  const colIndex = colState.items.findIndex((t) => String(t.id) === idStr)
+
+  if (colIndex !== -1) {
+    colState.items[colIndex] = stored
+  } else {
+    // Si estamos en la página 1, se coloca al inicio de la columna visible
+    if (colState.page === 1) {
+      colState.items.unshift(stored)
+      if (colState.items.length > colState.pageSize) {
+        colState.items.pop()
+      }
+    }
+    colState.total += 1
+  }
+
+  // 3. Mantener sincronizado state.items y state.total global
+  const mainIndex = state.items.findIndex((t) => String(t.id) === idStr)
+  if (mainIndex === -1) {
+    state.items.unshift(stored)
+  } else {
+    state.items[mainIndex] = stored
+  }
+  state.total = Object.values(state.byColumn).reduce((acc, c) => acc + c.total, 0)
+
+  return stored
+}
+
+const removeTicketFromState = (state: TicketsState, targetId: string) => {
+  state.items = state.items.filter((ticket) => String(ticket.id) !== targetId)
+  state.deletingIds = state.deletingIds.filter((id) => id !== targetId)
+  state.recentIds = state.recentIds.filter((id) => id !== targetId)
+  state.updatedIds = state.updatedIds.filter((id) => id !== targetId)
+  delete state.locks[targetId]
+
+  for (const colId of Object.keys(state.byColumn)) {
+    const colNum = Number(colId)
+    const colState = state.byColumn[colNum]
+    if (colState) {
+      const prevLen = colState.items.length
+      colState.items = colState.items.filter((ticket) => String(ticket.id) !== targetId)
+      if (colState.items.length < prevLen) {
+        colState.total = Math.max(0, colState.total - 1)
+      }
+    }
+  }
+  state.total = Object.values(state.byColumn).reduce((acc, c) => acc + c.total, 0)
+}
+
 const ticketsSlice = createSlice({
   name: 'tickets',
   initialState,
@@ -125,51 +198,24 @@ const ticketsSlice = createSlice({
       state.selectedTicketId = action.payload
     },
     updateTicket(state, action: PayloadAction<Ticket>) {
-      const index = state.items.findIndex((ticket) => ticket.id === action.payload.id)
-
-      if (index !== -1) {
-        state.items[index] = toStoredTicket(action.payload, state.items[index])
-      }
+      upsertTicketInState(state, action.payload)
     },
     addTicketFromStream(state, action: PayloadAction<Ticket>) {
-      const stored = toStoredTicket(action.payload)
+      const stored = upsertTicketInState(state, action.payload)
       const idStr = String(stored.id)
-      const index = state.items.findIndex((ticket) => String(ticket.id) === idStr)
-      if (index === -1) {
-        state.items.unshift(stored)
-        if (!state.recentIds.includes(idStr)) {
-          state.recentIds.push(idStr)
-        }
-      } else {
-        state.items[index] = toStoredTicket(action.payload, state.items[index])
-        if (!state.updatedIds.includes(idStr)) {
-          state.updatedIds.push(idStr)
-        }
+      if (!state.recentIds.includes(idStr)) {
+        state.recentIds.push(idStr)
       }
     },
     updateTicketFromStream(state, action: PayloadAction<Ticket>) {
-      const stored = toStoredTicket(action.payload)
+      const stored = upsertTicketInState(state, action.payload)
       const idStr = String(stored.id)
-      const index = state.items.findIndex((ticket) => String(ticket.id) === idStr)
-      if (index !== -1) {
-        state.items[index] = toStoredTicket(action.payload, state.items[index])
-        if (!state.updatedIds.includes(idStr)) {
-          state.updatedIds.push(idStr)
-        }
-      } else {
-        state.items.unshift(stored)
-        if (!state.recentIds.includes(idStr)) {
-          state.recentIds.push(idStr)
-        }
+      if (!state.updatedIds.includes(idStr)) {
+        state.updatedIds.push(idStr)
       }
     },
     removeTicketFromStream(state, action: PayloadAction<{ id: string | number }>) {
-      const targetId = String(action.payload.id)
-      state.items = state.items.filter((ticket) => String(ticket.id) !== targetId)
-      state.deletingIds = state.deletingIds.filter((id) => id !== targetId)
-      state.recentIds = state.recentIds.filter((id) => id !== targetId)
-      state.updatedIds = state.updatedIds.filter((id) => id !== targetId)
-      delete state.locks[targetId]
+      removeTicketFromState(state, String(action.payload.id))
     },
     setTicketLock(state, action: PayloadAction<TicketLock>) {
       state.locks[String(action.payload.ticketId)] = action.payload
@@ -244,7 +290,9 @@ const ticketsSlice = createSlice({
         if (!state.byColumn[col]) {
           state.byColumn[col] = createDefaultColumn(col)
         }
-        state.byColumn[col].isLoading = true
+        if (!action.meta.arg.silent) {
+          state.byColumn[col].isLoading = true
+        }
         state.error = null
       })
       .addCase(fetchColumnTickets.fulfilled, (state, action) => {
@@ -299,17 +347,10 @@ const ticketsSlice = createSlice({
         state.error = null
       })
       .addCase(createTicket.fulfilled, (state, action) => {
-        const idStr = String(action.payload.id)
-        const index = state.items.findIndex((ticket) => String(ticket.id) === idStr)
-        const storedTicket = toStoredTicket(action.payload, state.items[index])
-
-        if (index === -1) {
-          state.items.unshift(storedTicket)
-          if (!state.recentIds.includes(idStr)) {
-            state.recentIds.push(idStr)
-          }
-        } else {
-          state.items[index] = storedTicket
+        const stored = upsertTicketInState(state, action.payload)
+        const idStr = String(stored.id)
+        if (!state.recentIds.includes(idStr)) {
+          state.recentIds.push(idStr)
         }
       })
       .addCase(createTicket.rejected, (state, action) => {
@@ -319,40 +360,27 @@ const ticketsSlice = createSlice({
         state.error = null
       })
       .addCase(saveTicket.fulfilled, (state, action) => {
-        const idStr = String(action.payload.id)
-        const index = state.items.findIndex((ticket) => ticket.id === action.payload.id)
-
-        if (index !== -1) {
-          state.items[index] = toStoredTicket(action.payload, state.items[index])
-          if (!state.updatedIds.includes(idStr)) {
-            state.updatedIds.push(idStr)
-          }
+        const stored = upsertTicketInState(state, action.payload)
+        const idStr = String(stored.id)
+        if (!state.updatedIds.includes(idStr)) {
+          state.updatedIds.push(idStr)
         }
       })
       .addCase(saveTicket.rejected, (state, action) => {
         state.error = action.payload ?? 'No se pudieron guardar los cambios.'
       })
       .addCase(saveTicketWithImages.fulfilled, (state, action) => {
-        const idStr = String(action.payload.id)
-        const index = state.items.findIndex((ticket) => ticket.id === action.payload.id)
-
-        if (index !== -1) {
-          state.items[index] = toStoredTicket(action.payload, state.items[index])
-          if (!state.updatedIds.includes(idStr)) {
-            state.updatedIds.push(idStr)
-          }
+        const stored = upsertTicketInState(state, action.payload)
+        const idStr = String(stored.id)
+        if (!state.updatedIds.includes(idStr)) {
+          state.updatedIds.push(idStr)
         }
       })
       .addCase(saveTicketWithImages.rejected, (state, action) => {
         state.error = action.payload ?? 'No se pudieron guardar los cambios o las imágenes.'
       })
       .addCase(deleteTicket.fulfilled, (state, action) => {
-        const targetId = String(action.payload)
-        state.items = state.items.filter((ticket) => String(ticket.id) !== targetId)
-        state.deletingIds = state.deletingIds.filter((id) => id !== targetId)
-        state.recentIds = state.recentIds.filter((id) => id !== targetId)
-        state.updatedIds = state.updatedIds.filter((id) => id !== targetId)
-        delete state.locks[targetId]
+        removeTicketFromState(state, String(action.payload))
       })
       .addCase(deleteTicket.rejected, (state, action) => {
         state.error = action.payload ?? 'No se pudo eliminar el ticket.'
@@ -360,17 +388,20 @@ const ticketsSlice = createSlice({
         state.deletingIds = state.deletingIds.filter((id) => id !== targetId)
       })
       .addCase(markTicketAsRead.pending, (state, action) => {
-        const ticketId = action.meta.arg
-        const item = state.items.find((ticket) => String(ticket.id) === String(ticketId))
+        const ticketId = String(action.meta.arg)
+        const item = state.items.find((ticket) => String(ticket.id) === ticketId)
         if (item) {
           item.leido = true
         }
+        for (const colState of Object.values(state.byColumn)) {
+          const colItem = colState.items.find((ticket) => String(ticket.id) === ticketId)
+          if (colItem) {
+            colItem.leido = true
+          }
+        }
       })
       .addCase(markTicketAsRead.fulfilled, (state, action) => {
-        const index = state.items.findIndex((ticket) => String(ticket.id) === String(action.payload.id))
-        if (index !== -1) {
-          state.items[index] = toStoredTicket(action.payload, state.items[index])
-        }
+        upsertTicketInState(state, action.payload)
       })
       .addCase(lockTicket.fulfilled, (state, action) => {
         state.locks[String(action.payload.ticketId)] = action.payload

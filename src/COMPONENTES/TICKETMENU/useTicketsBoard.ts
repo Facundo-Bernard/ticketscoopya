@@ -131,11 +131,31 @@ export function useTicketsBoard() {
     dispatch(fetchAllColumns({ filters, incluirResueltos: showFinished, pageSize: TICKETS_PER_COLUMN }))
   }
 
+  useEffect(() => {
+    const handleStreamDeleted = (e: Event) => {
+      const customEvent = e as CustomEvent<{ ticketId: string }>
+      const deletedId = customEvent.detail?.ticketId
+      if (deletedId && String(deletedId) !== String(deleteModal.selectedData?.id)) {
+        dispatch(
+          fetchAllColumns({
+            filters,
+            incluirResueltos: showFinished,
+            pageSize: TICKETS_PER_COLUMN,
+            silent: true,
+          }),
+        )
+      }
+    }
+    window.addEventListener('tickets:deleted_from_stream', handleStreamDeleted)
+    return () => window.removeEventListener('tickets:deleted_from_stream', handleStreamDeleted)
+  }, [dispatch, filters, showFinished, deleteModal.selectedData])
+
   const handleConfirmDelete = async () => {
     const ticketToDelete = deleteModal.selectedData
     if (!ticketToDelete) return
 
     const ticketId = ticketToDelete.id
+    const targetCol = Number(ticketToDelete.columnId ?? ticketToDelete.columna ?? 1)
     const lock = locks[String(ticketId)]
     if (lock?.usuario && lock.usuario.toLowerCase() !== myEmail) {
       alert(`No se puede eliminar el ticket porque está siendo editado por ${lock.usuario}.`)
@@ -149,7 +169,25 @@ export function useTicketsBoard() {
     try {
       setIsDeleting(true)
       await dispatch(deleteTicket(ticketId)).unwrap()
-      dispatch(fetchAllColumns({ filters, incluirResueltos: showFinished, pageSize: TICKETS_PER_COLUMN }))
+
+      // Calcular la página adecuada para la columna afectada
+      const colState = byColumn[targetCol]
+      const currentPage = colState?.page || 1
+      const remainingTotal = Math.max(0, (colState?.total || 1) - 1)
+      const maxPage = Math.max(1, Math.ceil(remainingTotal / TICKETS_PER_COLUMN))
+      const targetPage = Math.min(currentPage, maxPage)
+
+      // Rellenar de forma silenciosa la columna afectada para ocupar el 4to espacio
+      await dispatch(
+        fetchColumnTickets({
+          columna: targetCol,
+          page: targetPage,
+          pageSize: TICKETS_PER_COLUMN,
+          filters,
+          incluirResueltos: showFinished,
+          silent: true,
+        }),
+      )
     } catch (error: unknown) {
       console.error('Error al eliminar ticket:', error)
       dispatch(unmarkTicketAsDeleting(ticketId))

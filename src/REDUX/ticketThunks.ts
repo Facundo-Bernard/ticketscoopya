@@ -40,6 +40,7 @@ export interface FetchColumnArgs {
     leido?: boolean | ''
   }
   incluirResueltos: boolean
+  silent?: boolean
 }
 
 /**
@@ -105,23 +106,28 @@ export const fetchAllColumns = createAsyncThunk<
     filters?: FetchColumnArgs['filters']
     incluirResueltos: boolean
     pageSize?: number
+    silent?: boolean
+    resetPage?: boolean
   }
 >(
   'tickets/fetchAllColumns',
-  async ({ filters, incluirResueltos, pageSize = 4 }, { dispatch }) => {
+  async ({ filters, incluirResueltos, pageSize = 4, silent = false, resetPage = false }, { dispatch, getState }) => {
     const columns = [1, 2, 3, 4]
+    const state = getState() as any
     await Promise.all(
-      columns.map((columna) =>
-        dispatch(
+      columns.map((columna) => {
+        const colPage = resetPage ? 1 : (state?.tickets?.byColumn?.[columna]?.page || 1)
+        return dispatch(
           fetchColumnTickets({
             columna,
-            page: 1,
+            page: colPage,
             pageSize,
             filters,
             incluirResueltos,
+            silent,
           }),
-        ),
-      ),
+        )
+      }),
     )
   },
 )
