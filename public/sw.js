@@ -2,7 +2,7 @@
 const CACHE_NAME = 'coopya-tickets-v1';
 
 // Instalación inmediata del Service Worker
-self.addEventListener('install', (event) => {
+self.addEventListener('install', (_event) => {
   self.skipWaiting();
 });
 
@@ -59,7 +59,7 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(self.registration.showNotification(title, options));
-  } catch (err) {
+  } catch (_err) {
     const text = event.data.text();
     event.waitUntil(
       self.registration.showNotification('🎫 Tickets Coopya', {
