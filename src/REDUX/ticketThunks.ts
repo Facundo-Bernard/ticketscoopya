@@ -1,21 +1,128 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
 import type { CreateTicketInput, Ticket, TicketLock } from '../TYPES'
-import { ticketService, type TicketImageChanges } from '../SERVICES/ticketService'
+import { ticketService, type TicketImageChanges, type TicketFilterParams, type TicketPagedResponse } from '../SERVICES/ticketService'
 import { messageFromError } from './errorUtils'
 
 export { messageFromError } from './errorUtils'
 
 /**
- * 1. Obtener todos los tickets
+ * 1. Obtener todos los tickets (soporte de filtros y paginacion)
  */
-export const fetchTickets = createAsyncThunk<Ticket[], void, { rejectValue: string }>(
+export const fetchTickets = createAsyncThunk<TicketPagedResponse, TicketFilterParams | undefined, { rejectValue: string }>(
   'tickets/fetchTickets',
-  async (_, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      return await ticketService.getTickets()
+      return await ticketService.getTicketsPaged(params)
     } catch (error) {
       return rejectWithValue(messageFromError(error))
     }
+  },
+)
+
+export interface ColumnFetchPayload {
+  columna: number
+  page: number
+  total: number
+  skip: number
+  limit: number
+  items: Ticket[]
+}
+
+export interface FetchColumnArgs {
+  columna: number
+  page: number
+  pageSize: number
+  filters?: {
+    q?: string
+    prioridad?: string
+    asignar?: string
+    columna?: number | ''
+    leido?: boolean | ''
+  }
+  incluirResueltos: boolean
+}
+
+/**
+ * Obtener tickets paginados para una columna específica (skip y limit reales en backend)
+ */
+export const fetchColumnTickets = createAsyncThunk<
+  ColumnFetchPayload,
+  FetchColumnArgs,
+  { rejectValue: string }
+>(
+  'tickets/fetchColumnTickets',
+  async ({ columna, page, pageSize, filters, incluirResueltos }, { rejectWithValue }) => {
+    try {
+      if (
+        filters?.columna !== undefined &&
+        filters?.columna !== '' &&
+        Number(filters.columna) !== columna
+      ) {
+        return {
+          columna,
+          page: 1,
+          total: 0,
+          skip: 0,
+          limit: pageSize,
+          items: [],
+        }
+      }
+
+      const params: TicketFilterParams = {
+        columna,
+        skip: (Math.max(1, page) - 1) * pageSize,
+        limit: pageSize,
+        incluir_resueltos: incluirResueltos,
+      }
+      if (filters?.q?.trim()) params.q = filters.q.trim()
+      if (filters?.prioridad) params.prioridad = filters.prioridad
+      if (filters?.asignar?.trim()) params.asignar = filters.asignar.trim()
+      if (filters?.leido !== '' && filters?.leido !== undefined) {
+        params.leido = filters.leido as boolean
+      }
+
+      const response = await ticketService.getTicketsPaged(params)
+      return {
+        columna,
+        page,
+        total: response.total,
+        skip: response.skip,
+        limit: response.limit,
+        items: response.items,
+      }
+    } catch (error) {
+      return rejectWithValue(messageFromError(error))
+    }
+  },
+)
+
+/**
+ * Obtener la primera página de las 4 columnas en paralelo
+ */
+export const fetchAllColumns = createAsyncThunk<
+  void,
+  {
+    filters?: FetchColumnArgs['filters']
+    incluirResueltos: boolean
+    pageSize?: number
+  }
+>(
+  'tickets/fetchAllColumns',
+  async ({ filters, incluirResueltos, pageSize = 4 }, { dispatch }) => {
+    const columns = [1, 2, 3, 4]
+    await Promise.all(
+      columns.map((columna) =>
+        dispatch(
+          fetchColumnTickets({
+            columna,
+            page: 1,
+            pageSize,
+            filters,
+            incluirResueltos,
+          }),
+        ),
+      ),
+    )
   },
 )
 

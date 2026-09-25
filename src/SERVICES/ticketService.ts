@@ -26,8 +26,20 @@ export interface TicketFilterParams {
   estado?: string;
   prioridad?: string;
   asignar?: string;
+  columna?: number;
+  leido?: boolean;
+  q?: string;
+  incluir_resueltos?: boolean;
   skip?: number;
   limit?: number;
+}
+
+/** Respuesta paginada devuelta por GET /tickets/ */
+export interface TicketPagedResponse {
+  total: number;
+  skip: number;
+  limit: number;
+  items: Ticket[];
 }
 
 export interface UpdateTicketInput {
@@ -106,10 +118,22 @@ export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket =
 };
 
 export const ticketService = {
-  // Obtener lista de tickets con filtros opcionales
+  // Obtener lista de tickets con filtros (devuelve respuesta paginada)
+  async getTicketsPaged(params?: TicketFilterParams): Promise<TicketPagedResponse> {
+    const response = await api.get<{ total: number; skip: number; limit: number; items: any[] }>('/tickets/', { params });
+    const data = response.data;
+    return {
+      total: data.total,
+      skip: data.skip,
+      limit: data.limit,
+      items: data.items.map(mapBackendToFrontendTicket),
+    };
+  },
+
+  // Compatibilidad: obtener solo la lista de items
   async getTickets(params?: TicketFilterParams): Promise<Ticket[]> {
-    const response = await api.get<TicketListPayload>('/tickets/', { params });
-    return getTicketList(response.data).map(mapBackendToFrontendTicket);
+    const paged = await ticketService.getTicketsPaged(params);
+    return paged.items;
   },
 
   // Obtener un ticket puntual por ID

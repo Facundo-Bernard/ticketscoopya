@@ -13,7 +13,7 @@ export const MenuHeader: React.FC<MenuHeaderProps> = ({
   onToggleHistory,
 }) => {
   return (
-    <Header subtitle="Mesa de Ayuda y Gestión de Tickets">
+    <Header subtitle="Mesa de Ayuda y Gestión de Tickets" className="mb-0">
       <button
         type="button"
         className={`btn btn-sm px-3 fw-medium ${showFinished ? 'btn-coopya-red' : 'btn-outline-secondary'}`}

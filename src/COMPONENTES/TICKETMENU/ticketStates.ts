@@ -12,10 +12,10 @@ export const TICKET_STATE_COLORS: Record<string, string> = {
 
 // Mapeo puramente estético de colores Bootstrap según la prioridad
 export const PRIORIDAD_COLORS: Record<string, string> = {
-  baja: 'secondary',
-  media: 'info',
-  alta: 'warning',
-  critica: 'danger'
+  baja: 'primary',
+  media: 'warning',
+  alta: 'danger',
+  critica: 'secondary'
 };
 
 // Períodos de Frecuencia

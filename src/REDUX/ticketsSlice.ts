@@ -2,6 +2,8 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { Ticket, TicketLock } from '../TYPES'
 import {
   fetchTickets,
+  fetchColumnTickets,
+  fetchAllColumns,
   fetchTicketById,
   createTicket,
   saveTicket,
@@ -16,6 +18,8 @@ import {
 // Re-exportamos los thunks para compatibilidad total con los componentes existentes
 export {
   fetchTickets,
+  fetchColumnTickets,
+  fetchAllColumns,
   fetchTicketById,
   createTicket,
   saveTicket,
@@ -29,8 +33,28 @@ export {
 
 type StoredTicket = Ticket & { columnId: number }
 
-type TicketsState = {
+export type ColumnPaginationState = {
   items: StoredTicket[]
+  total: number
+  page: number
+  pageSize: number
+  isLoading: boolean
+}
+
+const createDefaultColumn = (_col?: number): ColumnPaginationState => ({
+  items: [],
+  total: 0,
+  page: 1,
+  pageSize: 4,
+  isLoading: false,
+})
+
+export type TicketsState = {
+  items: StoredTicket[]
+  byColumn: Record<number, ColumnPaginationState>
+  total: number
+  skip: number
+  limit: number
   selectedTicketId: string | null
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
@@ -42,6 +66,15 @@ type TicketsState = {
 
 const initialState: TicketsState = {
   items: [],
+  byColumn: {
+    1: createDefaultColumn(1),
+    2: createDefaultColumn(2),
+    3: createDefaultColumn(3),
+    4: createDefaultColumn(4),
+  },
+  total: 0,
+  skip: 0,
+  limit: 50,
   selectedTicketId: null,
   status: 'idle',
   error: null,
@@ -183,7 +216,19 @@ const ticketsSlice = createSlice({
       })
       .addCase(fetchTickets.fulfilled, (state, action) => {
         state.status = 'succeeded'
-        state.items = action.payload
+        const payload = action.payload as any
+        const isPaged = payload && Array.isArray(payload.items)
+        const rawItems: Ticket[] = isPaged ? payload.items : (Array.isArray(payload) ? payload : [])
+
+        if (isPaged) {
+          state.total = payload.total ?? rawItems.length
+          state.skip = payload.skip ?? 0
+          state.limit = payload.limit ?? 50
+        } else {
+          state.total = rawItems.length
+        }
+
+        state.items = rawItems
           .filter((ticket) => !state.deletingIds.includes(String(ticket.id)))
           .map((ticket) => {
             const current = state.items.find((item) => item.id === ticket.id)
@@ -193,6 +238,43 @@ const ticketsSlice = createSlice({
       .addCase(fetchTickets.rejected, (state, action) => {
         state.status = 'failed'
         state.error = action.payload ?? 'No se pudieron cargar los tickets.'
+      })
+      .addCase(fetchColumnTickets.pending, (state, action) => {
+        const col = action.meta.arg.columna
+        if (!state.byColumn[col]) {
+          state.byColumn[col] = createDefaultColumn(col)
+        }
+        state.byColumn[col].isLoading = true
+        state.error = null
+      })
+      .addCase(fetchColumnTickets.fulfilled, (state, action) => {
+        const { columna, page, total, limit, items } = action.payload
+        if (!state.byColumn[columna]) {
+          state.byColumn[columna] = createDefaultColumn(columna)
+        }
+        const colState = state.byColumn[columna]
+        colState.isLoading = false
+        colState.page = page
+        colState.total = total
+        colState.pageSize = limit
+        colState.items = items
+          .filter((ticket) => !state.deletingIds.includes(String(ticket.id)))
+          .map((ticket) => {
+            const current = state.items.find((item) => item.id === ticket.id)
+            return toStoredTicket(ticket, current)
+          })
+
+        // Reconstruir state.items con la unión de las 4 columnas
+        state.items = Object.values(state.byColumn).flatMap((c) => c.items)
+        state.total = Object.values(state.byColumn).reduce((acc, c) => acc + c.total, 0)
+        state.status = 'succeeded'
+      })
+      .addCase(fetchColumnTickets.rejected, (state, action) => {
+        const col = action.meta.arg.columna
+        if (state.byColumn[col]) {
+          state.byColumn[col].isLoading = false
+        }
+        state.error = action.payload ?? 'No se pudieron cargar los tickets de la columna.'
       })
       .addCase(fetchTicketById.pending, (state) => {
         state.status = 'loading'
