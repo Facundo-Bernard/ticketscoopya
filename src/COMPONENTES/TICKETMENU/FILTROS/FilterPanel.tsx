@@ -1,6 +1,7 @@
 import React from 'react'
 import type { ActiveFilters } from './useTicketFilters'
 import { TICKET_COLUMNS } from '../../../TYPES'
+import { NotificationBell } from '../../NOTIFICACIONES'
 
 const PRIORIDADES = [
   { value: 'baja',    label: 'Baja',    color: '#0d6efd' },
@@ -89,6 +90,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
               <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
             </svg>
           </button>
+
+          <NotificationBell />
 
           {/* Pastillas de filtros activos visibles de un vistazo */}
           {activeCount > 0 && (

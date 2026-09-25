@@ -52,6 +52,8 @@ self.addEventListener('push', (event) => {
       body: payload.body || 'Nuevo evento en el sistema de tickets',
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
+      tag: payload.tag || 'coopya-ticket-alert',
+      renotify: true,
       vibrate: [200, 100, 200],
       data: {
         url: payload.url || '/',

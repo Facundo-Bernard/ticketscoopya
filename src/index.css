@@ -1133,6 +1133,51 @@ body {
   color: var(--coopya-red);
 }
 
+/* Botón de campana de notificaciones push */
+.notification-bell-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.notification-bell-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+.notification-bell-btn[data-active="true"] {
+  background: #fef2f2;
+  border-color: var(--coopya-red);
+  color: var(--coopya-red);
+}
+.notification-bell-btn[data-active="true"]:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: var(--coopya-red-hover);
+  color: var(--coopya-red-hover);
+}
+.notification-bell-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 576px) {
+  .notification-bell-btn {
+    padding: 0.32rem 0.6rem;
+    gap: 0.3rem;
+  }
+}
+
 /* Contador badge de filtros activos */
 .filter-badge {
   display: inline-flex;

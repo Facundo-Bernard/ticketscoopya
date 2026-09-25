@@ -29,14 +29,7 @@ export function useTicketStream(): void {
       return;
     }
 
-    // 1. Solicitar permisos para notificaciones nativas de escritorio si aún no fue definido
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch((err) => {
-        console.warn('Permiso de notificaciones denegado o no disponible:', err);
-      });
-    }
-
-    // 2. Conectar al canal SSE del backend
+    // Conectar al canal SSE del backend para sincronización de estado en tiempo real
     const streamUrl = `${API_BASE_URL}/tickets/stream`;
     const eventSource = new EventSource(streamUrl);
 
@@ -50,23 +43,8 @@ export function useTicketStream(): void {
         const rawData = JSON.parse(event.data);
         const ticket = mapBackendToFrontendTicket(rawData);
 
-        // A. Actualizar estado en el store de Redux
+        // Actualizar estado en el store de Redux
         dispatch(addTicketFromStream(ticket));
-
-        // B. Emitir notificación de escritorio nativa del sistema operativo
-        if ('Notification' in window && Notification.permission === 'granted') {
-          const title = `🎫 Nuevo Ticket: ${ticket.identificador || `TK-${ticket.id}`}`;
-          const body = `${ticket.titulo}\nSolicitado por: ${ticket.correo || ticket.creadoPor || 'Usuario'}`;
-
-          const notification = new Notification(title, {
-            body,
-            icon: '/favicon.svg',
-          });
-
-          notification.onclick = () => {
-            window.focus();
-          };
-        }
       } catch (err) {
         console.error('Error procesando evento SSE nuevo_ticket:', err);
       }
