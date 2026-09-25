@@ -8,6 +8,9 @@ import type { Ticket, ColumnOption } from '../../TYPES';
 export interface BoardColumnProps {
   column: ColumnOption;
   tickets: Ticket[];
+  totalTickets: number;
+  currentPage: number;
+  pageSize?: number;
   isLoading?: boolean;
   errorMessage?: string | null;
   showFinished: boolean;
@@ -15,11 +18,15 @@ export interface BoardColumnProps {
   onEditTicket: (ticket: Ticket) => void;
   onViewTicket: (ticket: Ticket) => void;
   onDeleteTicket: (ticket: Ticket) => void;
+  onPageChange: (newPage: number) => void;
 }
 
 export const BoardColumn: React.FC<BoardColumnProps> = ({
   column,
   tickets,
+  totalTickets,
+  currentPage,
+  pageSize = 4,
   isLoading = false,
   errorMessage,
   showFinished,
@@ -27,6 +34,7 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
   onEditTicket,
   onViewTicket,
   onDeleteTicket,
+  onPageChange,
 }) => {
   const {
     locks = {},
@@ -34,16 +42,23 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
     updatedIds = [],
   } = useSelector((state: RootState) => state.tickets);
   const myEmail = (getOperatorIdentity() || '').toLowerCase();
+
+  // Paginación real con backend (tickets ya viene limitado a pageSize por la API)
+  const totalPages = Math.max(1, Math.ceil(totalTickets / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const from = totalTickets === 0 ? 0 : startIndex + 1;
+  const to = Math.min(startIndex + pageSize, totalTickets);
+
   return (
     <div className="col-12 col-sm-6 col-lg-3">
-      <section className="h-100 bg-white rounded-3 shadow-sm border border-light-subtle p-3">
+      <section className="h-100 d-flex flex-column bg-white rounded-3 shadow-sm border border-light-subtle p-3">
         {/* Encabezado de Columna */}
         <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
           <div className="d-flex align-items-center gap-2">
             <span className={`column-dot column-dot-${column.id}`} />
             <h6 className="mb-0 fw-bold text-dark text-uppercase">{column.title}</h6>
             <span className="badge rounded-pill bg-light text-secondary border">
-              {tickets.length}
+              {totalTickets}
             </span>
           </div>
 
@@ -61,7 +76,7 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
         </div>
 
         {/* Lista de Tarjetas */}
-        <div className="d-flex flex-column gap-3">
+        <div className="d-flex flex-column gap-3 flex-grow-1">
           {isLoading && column.id === 1 && (
             <span className="small text-secondary">Cargando tickets…</span>
           )}
@@ -123,6 +138,47 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
             </span>
           )}
         </div>
+
+        {/* Paginación al pie de la columna (cuando hay más de 1 página) */}
+        {totalPages > 1 && (
+          <div className="column-pagination-footer mt-auto pt-2 border-top d-flex align-items-center justify-content-between">
+            <span className="column-pagination-info">
+              {from}&ndash;{to} de {totalTickets}
+            </span>
+
+            <div className="d-flex align-items-center gap-1">
+              <button
+                type="button"
+                className="column-pagination-btn"
+                disabled={currentPage <= 1 || isLoading}
+                onClick={() => onPageChange(currentPage - 1)}
+                aria-label="Página anterior"
+                title="Página anterior"
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                </svg>
+              </button>
+
+              <span className="column-pagination-page-indicator">
+                {isLoading ? '…' : `${currentPage} / ${totalPages}`}
+              </span>
+
+              <button
+                type="button"
+                className="column-pagination-btn"
+                disabled={currentPage >= totalPages || isLoading}
+                onClick={() => onPageChange(currentPage + 1)}
+                aria-label="Página siguiente"
+                title="Página siguiente"
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

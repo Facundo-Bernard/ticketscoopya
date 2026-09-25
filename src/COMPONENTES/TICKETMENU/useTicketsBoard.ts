@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import {
   checkTicketLock,
   deleteTicket,
-  fetchTickets,
+  fetchColumnTickets,
+  fetchAllColumns,
   lockTicket,
   markTicketAsDeleting,
   markTicketAsRead,
@@ -19,6 +20,7 @@ import type { TicketImageChanges } from '../../SERVICES/ticketService'
 import { getOperatorIdentity } from '../../UTILS/storageUtils'
 import { useModal } from '../../hooks/useModal'
 import { useTicketStream } from '../../hooks/useTicketStream'
+import { useTicketFilters, TICKETS_PER_COLUMN } from './FILTROS'
 
 export interface TicketModalData {
   ticket: Ticket
@@ -28,11 +30,35 @@ export interface TicketModalData {
 export function useTicketsBoard() {
   useTicketStream()
 
-  const { items: tickets, status, error, locks } = useSelector((state: RootState) => state.tickets)
-  const dispatch = useDispatch<AppDispatch>()
   const [showFinished, setShowFinished] = useState(false)
+
+  const {
+    filters,
+    filtersOpen,
+    activeCount: filterCount,
+    isPending: isFilterPending,
+    handleChange: handleFilterChange,
+    handleApply: handleFilterApply,
+    clearFilters,
+    toggleFiltersOpen,
+  } = useTicketFilters(showFinished)
+
+  const { items: tickets, byColumn, status, error, locks } = useSelector((state: RootState) => state.tickets)
+  const dispatch = useDispatch<AppDispatch>()
   const [isDeleting, setIsDeleting] = useState(false)
   const myEmail = (getOperatorIdentity() || '').toLowerCase()
+
+  const handleColumnPageChange = (columna: number, newPage: number) => {
+    dispatch(
+      fetchColumnTickets({
+        columna,
+        page: newPage,
+        pageSize: TICKETS_PER_COLUMN,
+        filters,
+        incluirResueltos: showFinished,
+      }),
+    )
+  }
 
   const detailModal = useModal<TicketModalData>()
   const createModal = useModal<number>()
@@ -85,12 +111,14 @@ export function useTicketsBoard() {
 
   useEffect(() => {
     if (status === 'idle') {
-      dispatch(fetchTickets())
+      // Tablero activo: consulta cada columna por separado con skip/limit
+      dispatch(fetchAllColumns({ filters, incluirResueltos: false, pageSize: TICKETS_PER_COLUMN }))
     }
-  }, [dispatch, status])
+  }, [dispatch, status, filters])
 
   const handleTicketCreated = () => {
     createModal.closeModal()
+    dispatch(fetchAllColumns({ filters, incluirResueltos: showFinished, pageSize: TICKETS_PER_COLUMN }))
   }
 
   const handleTicketUpdated = async (updatedTicket: Ticket, imageChanges?: TicketImageChanges) => {
@@ -100,7 +128,7 @@ export function useTicketsBoard() {
     } else {
       await dispatch(saveTicket(updatedTicket)).unwrap()
     }
-    dispatch(fetchTickets())
+    dispatch(fetchAllColumns({ filters, incluirResueltos: showFinished, pageSize: TICKETS_PER_COLUMN }))
   }
 
   const handleConfirmDelete = async () => {
@@ -121,6 +149,7 @@ export function useTicketsBoard() {
     try {
       setIsDeleting(true)
       await dispatch(deleteTicket(ticketId)).unwrap()
+      dispatch(fetchAllColumns({ filters, incluirResueltos: showFinished, pageSize: TICKETS_PER_COLUMN }))
     } catch (error: unknown) {
       console.error('Error al eliminar ticket:', error)
       dispatch(unmarkTicketAsDeleting(ticketId))
@@ -151,7 +180,22 @@ export function useTicketsBoard() {
     status,
     error,
     showFinished,
-    toggleHistory: () => setShowFinished((current) => !current),
+    // filtros
+    filters,
+    filtersOpen,
+    filterCount,
+    isFilterPending,
+    handleFilterChange,
+    handleFilterApply,
+    clearFilters,
+    toggleFiltersOpen,
+    byColumn,
+    onColumnPageChange: handleColumnPageChange,
+    toggleHistory: () => {
+        const nextShowFinished = !showFinished
+        setShowFinished(nextShowFinished)
+        dispatch(fetchAllColumns({ filters, incluirResueltos: nextShowFinished, pageSize: TICKETS_PER_COLUMN }))
+      },
     detailModal,
     createModal,
     deleteModal,
