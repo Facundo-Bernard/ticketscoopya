@@ -59,35 +59,6 @@ export interface TicketImageChanges {
   removedFileIds: string[];
 }
 
-type TicketListPayload =
-  | BackendTicketResponse[]
-  | {
-      data?: BackendTicketResponse[];
-      items?: BackendTicketResponse[];
-      tickets?: BackendTicketResponse[];
-      detail?: string;
-    };
-
-const getTicketList = (payload: TicketListPayload): BackendTicketResponse[] => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  const tickets = payload.data ?? payload.items ?? payload.tickets;
-
-  if (Array.isArray(tickets)) {
-    return tickets;
-  }
-
-  if (payload.detail) {
-    throw new Error(`La API no devolvió tickets: ${payload.detail}`);
-  }
-
-  throw new Error(
-    'La API devolvió un formato inesperado. Verificá que VITE_API_URL apunte al backend de Railway.',
-  );
-};
-
 // Mapper de Backend (snake_case) a Frontend (camelCase)
 export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket => {
   const rawCol = raw.columna ?? raw.column_id ?? raw.columnId;
