@@ -1,10 +1,11 @@
-import React from 'react';
-import Header from '../HEADER/Header';
+import React from 'react'
+import Header from '../HEADER/Header'
+import { NotificationBell } from '../NOTIFICACIONES'
 
 export interface MenuHeaderProps {
-  showFinished: boolean;
-  isLoading: boolean;
-  onToggleHistory: () => void;
+  showFinished: boolean
+  isLoading: boolean
+  onToggleHistory: () => void
 }
 
 export const MenuHeader: React.FC<MenuHeaderProps> = ({
@@ -14,6 +15,7 @@ export const MenuHeader: React.FC<MenuHeaderProps> = ({
 }) => {
   return (
     <Header subtitle="Mesa de Ayuda y Gestión de Tickets" className="mb-0">
+      <NotificationBell />
       <button
         type="button"
         className={`btn btn-sm px-3 fw-medium ${showFinished ? 'btn-coopya-red' : 'btn-outline-secondary'}`}
@@ -27,7 +29,7 @@ export const MenuHeader: React.FC<MenuHeaderProps> = ({
             : 'Ver Historial'}
       </button>
     </Header>
-  );
+  )
 };
 
 export default MenuHeader;
