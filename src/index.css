@@ -1076,4 +1076,585 @@ body {
 [data-sonner-toast] [data-button]:hover {
   background-color: var(--coopya-red-hover) !important;
   transform: scale(1.02) !important;
-}
+}
+/* ==========================================================================
+   PANEL DE FILTROS - TABLERO DE TICKETS (IDENTIDAD COOPYA)
+   ========================================================================== */
+
+/* Barra principal de filtros justo bajo el Header */
+.filter-bar-wrapper {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+/* Fila de trigger y resumen de filtros activos */
+.filter-trigger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 46px;
+  padding: 0.35rem 0;
+}
+
+.filter-trigger-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+/* Botón principal que abre/cierra el panel */
+.filter-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.01em;
+}
+.filter-toggle-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+.filter-toggle-btn[aria-expanded="true"] {
+  background: #fef2f2;
+  border-color: var(--coopya-red);
+  color: var(--coopya-red);
+}
+
+/* Contador badge de filtros activos */
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--coopya-red);
+  color: #ffffff;
+  border-radius: 9999px;
+  line-height: 1;
+}
+
+/* Chevron con rotación animada */
+.filter-chevron {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #64748b;
+}
+.filter-toggle-btn[aria-expanded="true"] .filter-chevron {
+  color: var(--coopya-red);
+}
+.filter-chevron[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+/* Pills de resumen de filtros activos en la barra */
+.filter-active-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.filter-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.73rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 0.18rem 0.55rem;
+  line-height: 1.2;
+}
+
+.filter-summary-pill button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 0.15rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.filter-summary-pill button:hover {
+  color: var(--coopya-red);
+}
+
+.filter-summary-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Link / botón para limpiar todos los filtros */
+.filter-clear-all {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--coopya-red);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+.filter-clear-all:hover {
+  opacity: 0.8;
+}
+
+/* Contenedor colapsable con animación CSS Grid hermética */
+.filter-collapse-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  border-top: 1px solid transparent;
+}
+.filter-collapse-wrapper[data-open="true"] {
+  grid-template-rows: 1fr;
+  border-top-color: #f1f5f9;
+}
+
+/* Inner hermético: min-height: 0, overflow: hidden y visibility: hidden cuando está cerrado */
+.filter-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0.25s ease;
+}
+.filter-collapse-wrapper[data-open="true"] .filter-collapse-inner {
+  visibility: visible;
+}
+
+/* Contenedor de los controles de filtro */
+.filter-panel-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem 1.8rem;
+  align-items: flex-start;
+  padding: 0.85rem 0 1.15rem 0;
+}
+
+/* Grupo de cada filtro */
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  min-width: 155px;
+}
+
+/* Etiqueta de sección de filtro */
+.filter-label {
+  font-size: 0.69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 0;
+}
+
+/* Wrapper para input con ícono de lupa */
+.filter-input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.filter-input-icon {
+  position: absolute;
+  left: 0.65rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+.filter-input--with-icon {
+  padding-left: 2rem !important;
+}
+
+/* Input de texto */
+.filter-input {
+  padding: 0.32rem 0.7rem;
+  font-size: 0.8125rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+  background: #f8fafc;
+  color: #1e293b;
+}
+.filter-input:focus {
+  border-color: var(--coopya-red);
+  box-shadow: 0 0 0 2.5px rgba(217, 37, 37, 0.12);
+  background: #ffffff;
+}
+.filter-input::placeholder {
+  color: #94a3b8;
+}
+
+/* Fila de input + botón "Aplicar" */
+.filter-input-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+/* Botón "Aplicar" junto al input */
+.filter-apply-btn {
+  padding: 0.32rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--coopya-red);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+.filter-apply-btn:hover {
+  background: var(--coopya-red-hover);
+  transform: scale(1.02);
+}
+.filter-apply-btn:active {
+  transform: scale(0.97);
+}
+
+/* Fila de chips */
+.filter-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+}
+
+/* Chip pill toggle */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.24rem 0.75rem;
+  font-size: 0.775rem;
+  font-weight: 500;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.filter-chip:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.filter-chip[data-active="true"] {
+  border-color: var(--coopya-navy);
+  background: var(--coopya-navy);
+  color: #ffffff;
+}
+.filter-chip:active {
+  transform: scale(0.96);
+}
+
+/* Dot indicador de color dentro del chip */
+.filter-chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .filter-bar-wrapper {
+    padding: 0 1rem;
+  }
+  .filter-panel-content {
+    gap: 0.85rem 1rem;
+  }
+  .filter-group {
+    min-width: 140px;
+    flex: 1 1 140px;
+  }
+}
+
+/* ==========================================================================
+   BARRA DE PAGINACIÓN CLÁSICA - TABLERO DE TICKETS (IDENTIDAD COOPYA)
+   ========================================================================== */
+
+.pagination-bar-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.65rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.pagination-info {
+  font-size: 0.825rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pagination-num {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Botones Anterior / Siguiente */
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pagination-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+.pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+/* Lista de botones numéricos */
+.pagination-pages-list {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Botón individual de número de página */
+.pagination-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pagination-page-btn:hover:not(.active):not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.pagination-page-btn.active {
+  background: var(--coopya-red);
+  border-color: var(--coopya-red);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(217, 37, 37, 0.2);
+}
+.pagination-page-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Separador de puntos suspensivos */
+.pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .pagination-bar-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .pagination-info {
+    text-align: center;
+  }
+  .pagination-controls {
+    justify-content: center;
+  }
+  .pagination-pages-list {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   PAGINACIÓN INDEPENDIENTE POR COLUMNA (KANBAN)
+   ========================================================================== */
+
+.column-pagination-footer {
+  border-top: 1px solid #f1f5f9 !important;
+  background: transparent;
+}
+
+.column-pagination-info {
+  font-size: 0.725rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.column-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.column-pagination-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.column-pagination-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: #ffffff;
+}
+
+.column-pagination-page-indicator {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  padding: 0 0.35rem;
+  min-width: 32px;
+  text-align: center;
+}
+
+/* ==========================================================================
+   DESCRIPCIÓN COLAPSABLE EN TARJETA DE TICKET (MODO COMPACTO)
+   ========================================================================== */
+
+/* Botón discreto que abre/cierra la descripción */
+.ticket-desc-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.35rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  line-height: 1;
+  transition: all 0.15s ease;
+  margin-top: 1px;
+}
+
+.ticket-desc-toggle-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.ticket-desc-toggle-btn.active {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+/* Rotación suave del chevron */
+.ticket-desc-chevron {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ticket-desc-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* Contenedor colapsable con CSS Grid hermético */
+.ticket-card-desc-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.ticket-card-desc-collapse.show {
+  grid-template-rows: 1fr;
+  visibility: visible;
+}
+
+/* Inner hermético sin paddings ni bordes directos para permitir 0fr real */
+.ticket-card-desc-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ticket-card-desc-text {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #475569;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.5rem !important;
+  border: 1px solid #e2e8f0;
+}

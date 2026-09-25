@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import type { AppDispatch } from '../../../REDUX/store'
 import { unmarkTicketAsUpdated } from '../../../REDUX/ticketsSlice'
@@ -39,6 +39,8 @@ export default function Card({
   isRecentlyUpdated?: boolean;
 }) {
   const dispatch = useDispatch<AppDispatch>();
+  const [showDesc, setShowDesc] = useState(false);
+  const hasDescription = Boolean(card.description && card.description.trim());
 
   useEffect(() => {
     if (isRecentlyUpdated && ticketId) {
@@ -102,16 +104,55 @@ export default function Card({
         </div>
       </div>
 
-      {/* Título del Ticket */}
-      <h6 
-        className="fw-bold text-dark mb-1 lh-sm line-clamp-2 text-break" 
-        title={card.title}
-      >
-        {card.title}
-      </h6>
+      {/* Título del Ticket + Toggle de descripción si existe */}
+      <div className="d-flex align-items-start justify-content-between gap-1 mb-1">
+        <h6 
+          className="fw-bold text-dark mb-0 lh-sm line-clamp-2 text-break" 
+          title={card.title}
+        >
+          {card.title}
+        </h6>
 
-      {/* Descripción (2 líneas) */}
-      <p className="small text-secondary mb-2 line-clamp-2 text-break">{card.description}</p>
+        {hasDescription && (
+          <button
+            type="button"
+            className={`ticket-desc-toggle-btn ${showDesc ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDesc((v) => !v);
+            }}
+            aria-expanded={showDesc}
+            title={showDesc ? 'Ocultar descripción' : 'Ver descripción'}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+            <svg
+              className={`ticket-desc-chevron ${showDesc ? 'open' : ''}`}
+              width="9"
+              height="9"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+            >
+              <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Descripción desplegable suavemente */}
+      {hasDescription && (
+        <div className={`ticket-card-desc-collapse ${showDesc ? 'show' : ''}`}>
+          <div className="ticket-card-desc-inner">
+            <p className="ticket-card-desc-text text-secondary text-break">
+              {card.description}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Fila Intermedia Dedicada: Frecuencia Periódica (Alternativa 1B) */}
       {card.frequency && (
