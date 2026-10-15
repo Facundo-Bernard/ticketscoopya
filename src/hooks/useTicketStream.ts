@@ -30,7 +30,10 @@ export function useTicketStream(): void {
     }
 
     // Conectar al canal SSE del backend para sincronización de estado en tiempo real
-    const streamUrl = `${API_BASE_URL}/tickets/stream`;
+    const token = localStorage.getItem('coopya_auth_token');
+    const streamUrl = token 
+      ? `${API_BASE_URL}/tickets/stream?token=${encodeURIComponent(token)}`
+      : `${API_BASE_URL}/tickets/stream`;
     const eventSource = new EventSource(streamUrl);
 
     // Handler para nuevo ticket creado

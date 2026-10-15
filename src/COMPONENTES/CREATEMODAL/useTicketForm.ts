@@ -14,6 +14,7 @@ export interface TicketData {
   imagenes: File[];
   columna: number;
   frecuencia?: Frecuencia;
+  hp_company_field?: string;
 }
 
 export interface UseTicketFormOptions {
@@ -39,7 +40,8 @@ export function useTicketForm(
     prioridad: 'media',
     imagenes: [],
     columna: isUser ? 1 : (initialCol || 1),
-    frecuencia: undefined
+    frecuencia: undefined,
+    hp_company_field: ''
   }));
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -142,6 +144,7 @@ export function useTicketForm(
         columnId: isUser ? 1 : ticketData.columna,
         columna: isUser ? 1 : ticketData.columna,
         frecuencia: isUser ? undefined : ticketData.frecuencia,
+        hp_company_field: ticketData.hp_company_field || undefined,
       };
       const nuevoTicket = await dispatch(createTicket(ticketInput)).unwrap();
 

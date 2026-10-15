@@ -141,12 +141,17 @@ export const ticketService = {
         formData.append('files', file);
       });
     }
+
     if (input.frecuencia && input.frecuencia.periodo && input.frecuencia.periodo !== 'No recurrente') {
       const frecuenciaPayload = {
         numero: Number(input.frecuencia.numero) || 1,
         periodo: input.frecuencia.periodo,
       };
       formData.append('frecuencia', JSON.stringify(frecuenciaPayload));
+    }
+
+    if (input.hp_company_field) {
+      formData.append('hp_company_field', input.hp_company_field);
     }
 
     const response = await api.post<BackendTicketResponse>('/tickets/', formData, {

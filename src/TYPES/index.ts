@@ -35,6 +35,7 @@ export interface CreateTicketInput {
   frecuencia?: Frecuencia;
   columnId?: number | string;
   columna?: number | string;
+  hp_company_field?: string;
 }
 
 export interface ColumnOption {

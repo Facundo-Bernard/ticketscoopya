@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Alert } from 'react-bootstrap';
 import { toast } from 'sonner';
+import Header from '../HEADER/Header';
 import { useTicketForm } from './useTicketForm';
 import { TicketFormCampos, TicketFormImagenes, TicketFormFooter } from '../COMPONENTESFORM';
 import { AlertCircleIcon } from '../COMUN/Icons';
@@ -81,6 +83,15 @@ export function TicketCreatorUser() {
 
   return (
     <div className="min-vh-100 d-flex flex-column">
+      <Header subtitle="Portal de Solicitudes y Mesa de Ayuda" className="mb-0">
+        <Link
+          to="/login"
+          className="btn btn-sm btn-outline-secondary px-3 py-1 fw-medium"
+          style={{ fontSize: '12px' }}
+        >
+          🔒 Acceso Operadores
+        </Link>
+      </Header>
 
       {/* Contenido Principal */}
       <main className="flex-grow-1 py-4 py-md-5">
@@ -137,6 +148,19 @@ export function TicketCreatorUser() {
                 )}
 
                 <form onSubmit={handleSubmit}>
+                  {/* Campo trampa invisible anti-bot (Honeypot) */}
+                  <div style={{ opacity: 0, position: 'absolute', top: 0, left: 0, height: 0, width: 0, zIndex: -1, pointerEvents: 'none' }}>
+                    <input
+                      type="text"
+                      name="hp_company_field"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      value={ticketData.hp_company_field || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
                   <TicketFormCampos
                     formData={ticketData}
                     onChange={handleInputChange}

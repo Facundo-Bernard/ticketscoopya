@@ -24,6 +24,33 @@ export const api = axios.create({
   }
 });
 
+// Interceptor para inyectar token JWT automáticamente en todas las peticiones
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('coopya_auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Interceptor para capturar expiración o falta de sesión
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 401 &&
+      typeof window !== 'undefined' &&
+      !window.location.pathname.includes('/login') &&
+      !window.location.pathname.includes('/crearticket-usuario')
+    ) {
+      localStorage.removeItem('coopya_auth_token');
+      localStorage.removeItem('coopya_auth_user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Helper para resolver la URL completa de imágenes guardadas en GridFS
 export const getFileUrl = (pathOrUrl: string): string => {
   if (!pathOrUrl) return '';
