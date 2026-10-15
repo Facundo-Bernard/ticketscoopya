@@ -232,7 +232,7 @@ export function useTicketsBoard() {
     toggleHistory: () => {
         const nextShowFinished = !showFinished
         setShowFinished(nextShowFinished)
-        dispatch(fetchAllColumns({ filters, incluirResueltos: nextShowFinished, pageSize: TICKETS_PER_COLUMN }))
+        dispatch(fetchAllColumns({ filters, incluirResueltos: nextShowFinished, pageSize: TICKETS_PER_COLUMN, resetPage: true }))
       },
     detailModal,
     createModal,
