@@ -1,0 +1,64 @@
+# Configuración de Caddy para Frontend Ticketscoopya (Puerto 8085)
+:8085 {
+    root * /srv
+    encode gzip zstd
+
+    # Logging estructurado en consola
+    log {
+        output stdout
+        format console
+    }
+
+    # Encabezados globales de seguridad (Hardening)
+    header {
+        # Ocultar la firma del servidor web para evitar fingerprinting
+        -Server
+
+        # Prevención de ataques MIME-sniffing
+        X-Content-Type-Options "nosniff"
+
+        # Protección contra ataques de Clickjacking
+        X-Frame-Options "DENY"
+
+        # Control de fuga de información en la cabecera Referer
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # Restricción de APIs sensibles del navegador
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+        # Forzar transporte seguro (HSTS)
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+
+    # Protección contra Payloads excesivos (Anti-DoS)
+    request_body {
+        max_size 10MB
+    }
+
+    # Bloquear acceso a archivos y directorios ocultos (.env, .git, etc.)
+    @hidden {
+        path */.*
+        path .*
+    }
+    respond @hidden 404
+
+    # Bloquear rutas de documentación técnica
+    @docs path /docs* /redoc* /openapi.json
+    respond @docs 404
+
+    # Proxy Inverso hacia el Backend FastAPI en la red asistodo_shared_net
+    @backend path /api/* /health*
+    handle @backend {
+        reverse_proxy {$BACKEND_URL:http://ticketcoopya-backend:8085} {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            flush_interval -1
+        }
+    }
+
+    # Servir Frontend y fallback SPA para rutas de la aplicación
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+}

@@ -1,0 +1,42 @@
+services:
+  # Servidor Caddy para Frontend Ticketscoopya
+  ticketscoopya-front:
+    image: caddy:2-alpine
+    container_name: ticketscoopya-front
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${PORT:-8085}:8085"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./dist:/srv:ro
+      - caddy_ticketscoopya_data:/data
+      - caddy_ticketscoopya_config:/config
+    networks:
+      - asistodo_shared_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8085/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  asistodo_shared_net:
+    name: asistodo_shared_net
+    external: true
+
+volumes:
+  caddy_ticketscoopya_data:
+  caddy_ticketscoopya_config:
