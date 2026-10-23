@@ -19,12 +19,13 @@ export const BACKEND_URL = rawBase.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, 
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Interceptor para inyectar token JWT automáticamente en todas las peticiones
+// Interceptor para inyectar token JWT automáticamente en peticiones (fallback si existiera)
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('coopya_auth_token');
   if (token) {

@@ -25,21 +25,30 @@ export const authService = {
     });
 
     const data = response.data;
-    if (data.access_token) {
-      localStorage.setItem(TOKEN_KEY, data.access_token);
+    if (data.user) {
+      // La autenticación se maneja vía cookie segura HttpOnly 'coopya_auth_token' emitida por el backend.
+      // En el cliente únicamente persistimos los datos del perfil de usuario no sensibles.
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      localStorage.removeItem(TOKEN_KEY);
     }
     return data;
   },
 
-  logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    window.location.href = '/login';
+  async logout(): Promise<void> {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Ignorar fallo de red y proceder con la desautenticación local
+    } finally {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      window.location.href = '/login';
+    }
   },
 
   getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    // Al usar cookies HttpOnly protegidas contra XSS, el token no es accesible por JavaScript
+    return null;
   },
 
   getUser(): AuthUser | null {
@@ -53,7 +62,7 @@ export const authService = {
   },
 
   isAuthenticated(): boolean {
-    return !!localStorage.getItem(TOKEN_KEY);
+    return !!localStorage.getItem(USER_KEY);
   },
 
   isAdmin(): boolean {
