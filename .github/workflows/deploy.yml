@@ -39,4 +39,4 @@ jobs:
 
       - name: 🚀 Iniciar o Recargar Contenedor Caddy
         run: |
-          docker compose up -d --remove-orphans
+          docker compose up -d --force-recreate --remove-orphans
