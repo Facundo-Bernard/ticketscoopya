@@ -10,6 +10,7 @@ export type TicketCard = {
   id: string
   title: string
   user: string
+  users?: string[]
   date: string
   description: string
   priority?: string
@@ -168,7 +169,10 @@ export default function Card({
 
       {/* Pie de tarjeta: Usuario asignado (izq) y Fecha de creación (der) - Cero Solapamiento */}
       <div className="d-flex justify-content-between align-items-center pt-2 border-top border-light">
-        <div className="d-flex align-items-center gap-1 min-w-0">
+        <div
+          className="d-flex align-items-center gap-1 min-w-0"
+          title={card.users && card.users.length > 0 ? `Asignados: ${card.users.join(', ')}` : card.user}
+        >
           <svg 
             width="14" 
             height="14" 
@@ -184,8 +188,13 @@ export default function Card({
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
           <span className={`small text-truncate truncate-name ${card.user === 'Sin Asignar' ? 'text-muted fst-italic' : 'text-dark fw-medium'}`}>
-            {card.user}
+            {card.users && card.users.length > 0 ? card.users[0] : card.user}
           </span>
+          {card.users && card.users.length > 1 && (
+            <span className="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle flex-shrink-0" style={{ fontSize: '10px' }}>
+              +{card.users.length - 1}
+            </span>
+          )}
         </div>
 
         <div className="d-flex align-items-center gap-2 flex-shrink-0">

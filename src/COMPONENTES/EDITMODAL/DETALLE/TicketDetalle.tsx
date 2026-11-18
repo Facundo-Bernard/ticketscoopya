@@ -4,7 +4,7 @@ import {
   PRIORIDAD_COLORS, 
   formatCatalogLabel 
 } from '../../TICKETMENU/ticketStates';
-import type { Ticket } from '../../../TYPES';
+import { normalizeColaboradores, type Ticket } from '../../../TYPES';
 import { 
   FlagIcon, 
   UserIcon, 
@@ -83,6 +83,7 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
   const prioridadNormalizada = (ticket.prioridad || 'media').toLowerCase();
   const prioridadColor = PRIORIDAD_COLORS[prioridadNormalizada] || 'secondary';
   const prioridadLabel = formatCatalogLabel(ticket.prioridad);
+  const colaboradoresList = normalizeColaboradores(ticket.colaboradores ?? ticket.colaborador);
 
   return (
     <div>
@@ -96,10 +97,12 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
       <div className="mb-3 d-flex flex-wrap gap-2 align-items-center mt-2">
         <span className={`badge bg-${stateColor}`}>{stateLabel}</span>
 
-        {ticket.colaborador && ticket.colaborador.trim() ? (
-          <span className="badge bg-light text-dark border d-inline-flex align-items-center">
-            <UserIcon size={13} className="me-1 text-primary" /> {ticket.colaborador}
-          </span>
+        {colaboradoresList.length > 0 ? (
+          colaboradoresList.map((nombre) => (
+            <span key={nombre} className="badge bg-light text-dark border d-inline-flex align-items-center">
+              <UserIcon size={13} className="me-1 text-primary" /> {nombre}
+            </span>
+          ))
         ) : (
           <span className="badge bg-light text-secondary border d-inline-flex align-items-center">
             <UserIcon size={13} className="me-1 text-secondary opacity-75" /> Sin Asignar

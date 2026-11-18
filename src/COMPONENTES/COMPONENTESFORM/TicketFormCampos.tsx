@@ -1,13 +1,15 @@
 import React from 'react';
 import { useCatalogs } from '../../COMPOSABLES/useCatalogs';
-import { TICKET_COLUMNS } from '../../TYPES';
+import { normalizeColaboradores, TICKET_COLUMNS } from '../../TYPES';
 import { UserCheckIcon } from '../COMUN/Icons';
+import AsignarMultiSelect from './AsignarMultiSelect';
 
 export interface TicketFormData {
   titulo: string;
   descripcion: string;
   colaborador?: string;
-  asignar?: string;
+  colaboradores?: string[];
+  asignar?: string | string[];
   email?: string;
   correo?: string;
   estado?: string;
@@ -46,9 +48,21 @@ export const TicketFormCampos: React.FC<TicketFormCamposProps> = ({
   const safePrioridades = Array.isArray(prioridades) ? prioridades : [];
   const safeAsignables = Array.isArray(asignables) ? asignables : [];
 
-  const assignedValue = formData.colaborador ?? formData.asignar ?? '';
+  const selectedOperators = normalizeColaboradores(
+    formData.colaboradores ?? formData.colaborador ?? formData.asignar
+  );
   const emailValue = formData.email ?? formData.correo ?? '';
   const columnValue = formData.columnId ?? formData.columna ?? 1;
+
+  const handleOperatorsChange = (nextList: string[]) => {
+    const syntheticEvent = {
+      target: {
+        name: 'colaborador',
+        value: nextList.join(', '),
+      },
+    } as React.ChangeEvent<HTMLSelectElement>;
+    onChange(syntheticEvent);
+  };
 
   const visibleSelectorsCount = (showPrioridad ? 1 : 0) + (showColumna ? 1 : 0) + (showEstado ? 1 : 0);
   const selectorColClass = visibleSelectorsCount === 3 ? 'col-md-4' : visibleSelectorsCount === 2 ? 'col-md-6' : 'col-12';
@@ -76,22 +90,15 @@ export const TicketFormCampos: React.FC<TicketFormCamposProps> = ({
         {showAsignar && (
           <div className="col-md-4 mt-3 mt-md-0">
             <label className="form-label-coopya">
-              Asignar Técnico
+              Asignar Técnicos
             </label>
-            <select
-              className="form-select"
-              name="colaborador"
-              value={assignedValue}
-              onChange={onChange}
-              disabled={isSaving || isLoading}
-            >
-              <option value="">{isLoading ? 'Cargando técnicos...' : 'Sin asignar'}</option>
-              {safeAsignables.map((c) => (
-                <option key={c.value} value={c.label || c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <AsignarMultiSelect
+              selected={selectedOperators}
+              options={safeAsignables}
+              isLoading={isLoading}
+              disabled={isSaving}
+              onChange={handleOperatorsChange}
+            />
           </div>
         )}
       </div>

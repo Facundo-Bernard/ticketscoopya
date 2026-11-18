@@ -9,3 +9,6 @@ export * from './TicketFormFooter';
 
 export { default as TicketFrecuencia } from './TicketFrecuencia';
 export * from './TicketFrecuencia';
+
+export { default as AsignarMultiSelect } from './AsignarMultiSelect';
+export * from './AsignarMultiSelect';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Ticket, Frecuencia } from '../../../TYPES';
+import { normalizeColaboradores, type Ticket, type Frecuencia } from '../../../TYPES';
 import type { TicketImageChanges } from '../../../SERVICES/ticketService';
 
 export interface TicketEditFormData {
@@ -41,7 +41,7 @@ export function useTicketEdit(
         titulo: ticket.titulo || '',
         descripcion: ticket.descripcion || '',
         estado: ticket.estado || 'abierto',
-        colaborador: ticket.colaborador || '',
+        colaborador: (ticket.colaboradores && ticket.colaboradores.length > 0 ? ticket.colaboradores.join(', ') : ticket.colaborador) || '',
         prioridad: ticket.prioridad || 'media',
         columnId: colNum,
         frecuencia: ticket.frecuencia || undefined
@@ -100,6 +100,7 @@ export function useTicketEdit(
     setIsSaving(true);
     setErrorMessage(null);
     const now = new Date().toISOString();
+    const cols = normalizeColaboradores(formData.colaborador);
 
     const ticketModificado: Ticket = {
       ...ticket,
@@ -107,7 +108,8 @@ export function useTicketEdit(
       descripcion: formData.descripcion,
       estado: formData.estado,
       prioridad: formData.prioridad,
-      colaborador: formData.colaborador,
+      colaborador: cols.join(', '),
+      colaboradores: cols,
       columnId: formData.columnId,
       columna: formData.columnId,
       frecuencia: formData.frecuencia,

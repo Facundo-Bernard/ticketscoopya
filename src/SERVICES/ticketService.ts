@@ -1,5 +1,5 @@
 import { api, getFileUrl } from './api';
-import type { CreateTicketInput, Ticket } from '../TYPES';
+import { normalizeColaboradores, type CreateTicketInput, type Ticket } from '../TYPES';
 
 export interface BackendTicketResponse {
   id: string;
@@ -9,7 +9,7 @@ export interface BackendTicketResponse {
   correo: string;
   prioridad: string;
   estado: string;
-  asignar?: string | null;
+  asignar?: string[] | string | null;
   imagenes: string[];
   fecha_creacion: string;
   fecha_edicion?: string | null;
@@ -47,8 +47,9 @@ export interface UpdateTicketInput {
   descripcion?: string;
   estado?: string;
   prioridad?: string;
-  colaborador?: string;
-  asignar?: string;
+  colaborador?: string | string[];
+  colaboradores?: string[];
+  asignar?: string | string[];
   frecuencia?: any;
   columnId?: number | string;
   columna?: number | string;
@@ -66,6 +67,7 @@ export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket =
     rawCol !== undefined && rawCol !== null
       ? (typeof rawCol === 'number' ? rawCol : isNaN(Number(rawCol)) ? rawCol : Number(rawCol))
       : undefined;
+  const colaboradores = normalizeColaboradores(raw.asignar);
 
   return {
     id: raw.id,
@@ -74,7 +76,8 @@ export const mapBackendToFrontendTicket = (raw: BackendTicketResponse): Ticket =
     descripcion: raw.descripcion || '',
     estado: raw.estado || 'abierto',
     prioridad: raw.prioridad || 'media',
-    colaborador: raw.asignar || '',
+    colaborador: colaboradores.join(', '),
+    colaboradores,
     creadoPor: raw.correo || '',
     correo: raw.correo || '',
     imagenes: (raw.imagenes || []).map(getFileUrl),
@@ -129,9 +132,10 @@ export const ticketService = {
     if (input.prioridad) {
       formData.append('prioridad', input.prioridad.toLowerCase());
     }
-    if (input.asignar) {
-      formData.append('asignar', input.asignar);
-    }
+    const asignados = normalizeColaboradores(input.asignar);
+    asignados.forEach((op) => {
+      formData.append('asignar', op);
+    });
     if (input.columnId !== undefined || input.columna !== undefined) {
       const col = input.columnId ?? input.columna;
       formData.append('columna', String(col));
@@ -171,8 +175,10 @@ export const ticketService = {
     if (input.descripcion !== undefined) payload.descripcion = input.descripcion;
     if (input.estado !== undefined) payload.estado = input.estado.toLowerCase();
     if (input.prioridad !== undefined) payload.prioridad = input.prioridad.toLowerCase();
-    if (input.colaborador !== undefined) payload.asignar = input.colaborador;
-    if (input.asignar !== undefined) payload.asignar = input.asignar;
+    const rawAsignar = input.colaboradores ?? input.asignar ?? input.colaborador;
+    if (rawAsignar !== undefined) {
+      payload.asignar = normalizeColaboradores(rawAsignar);
+    }
     if (input.frecuencia !== undefined) {
       if (input.frecuencia && input.frecuencia.periodo && input.frecuencia.periodo !== 'No recurrente') {
         payload.frecuencia = {

@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../REDUX/store';
 import { getOperatorIdentity } from '../../UTILS/storageUtils';
 import Card, { type TicketCard } from './CARDPROP/CARD';
-import type { Ticket, ColumnOption } from '../../TYPES';
+import { normalizeColaboradores, type Ticket, type ColumnOption } from '../../TYPES';
 
 export interface BoardColumnProps {
   column: ColumnOption;
@@ -93,11 +93,13 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
             );
             const isDeleting = deletingIds.includes(ticketIdStr);
             const isRecentlyUpdated = updatedIds.includes(ticketIdStr);
+            const users = normalizeColaboradores(ticket.colaboradores ?? ticket.colaborador);
 
             const card: TicketCard = {
               id: String(ticket.identificador || `TK-${ticket.id}`),
               title: ticket.titulo,
-              user: ticket.colaborador && ticket.colaborador.trim() ? ticket.colaborador.trim() : 'Sin Asignar',
+              user: users.length > 0 ? users.join(', ') : 'Sin Asignar',
+              users,
               date: ticket.fechaCreacion
                 ? (() => {
                     const d = new Date(ticket.fechaCreacion);

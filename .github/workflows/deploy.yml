@@ -13,12 +13,26 @@ jobs:
     steps:
       - name: 📥 Clonar código del repositorio
         uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: 🔧 Reparar permisos de compilaciones previas
+        run: |
+          HOST_UID=$(id -u)
+          HOST_GID=$(id -g)
+          docker run --rm \
+            -v "${{ github.workspace }}:/app" \
+            alpine:latest \
+            sh -c "mkdir -p /app/node_modules && chown -R ${HOST_UID}:${HOST_GID} /app/node_modules && rm -rf /app/dist"
 
       - name: 🏗️ Compilar Frontend con Contenedor Efímero (Node 22)
         run: |
           docker run --rm \
+            --user "$(id -u):$(id -g)" \
             -v "${{ github.workspace }}:/app" \
             -w /app \
+            -e HOME=/tmp \
+            -e npm_config_cache=/tmp/.npm \
             -e VITE_API_URL="/api/v1" \
             node:22-alpine \
             sh -c "npm ci && npm run build"
