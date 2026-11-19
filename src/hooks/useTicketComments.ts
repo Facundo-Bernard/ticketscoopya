@@ -1,18 +1,34 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import commentService from '../SERVICES/commentService';
 import type { TicketComment, CommentFilters } from '../TYPES';
 
 const PAGE_SIZE = 3;
 
+interface CommentsState {
+  items: TicketComment[];
+  total: number;
+}
+
 export function useTicketComments(ticketId: string | number | undefined) {
-  const [comments, setComments] = useState<TicketComment[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
+  const cleanTicketId = ticketId !== undefined && ticketId !== null ? String(ticketId) : '';
+  const [commentState, setCommentState] = useState<CommentsState>({ items: [], total: 0 });
+  const [loading, setLoading] = useState<boolean>(Boolean(cleanTicketId));
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const deletedIdsRef = useRef<Set<string>>(new Set());
 
-  const cleanTicketId = ticketId !== undefined && ticketId !== null ? String(ticketId) : '';
+  const appendUniqueComment = useCallback((comment: TicketComment) => {
+    setCommentState((prev) => {
+      if (prev.items.some((c) => c.id === comment.id)) {
+        return prev;
+      }
+      return {
+        items: [comment, ...prev.items],
+        total: prev.total + 1,
+      };
+    });
+  }, []);
 
   // 1. Carga inicial de comentarios y conteo total en paralelo (eliminando waterfalls)
   const fetchComments = useCallback(async (filters?: CommentFilters) => {
@@ -27,8 +43,7 @@ export function useTicketComments(ticketId: string | number | undefined) {
         commentService.getCommentsCount(cleanTicketId, filters),
       ]);
 
-      setComments(list);
-      setTotalCount(count);
+      setCommentState({ items: list, total: count });
     } catch (err: unknown) {
       console.error('Error al cargar comentarios:', err);
       setError('No se pudieron cargar los comentarios.');
@@ -38,32 +53,58 @@ export function useTicketComments(ticketId: string | number | undefined) {
   }, [cleanTicketId]);
 
   useEffect(() => {
-    fetchComments();
-  }, [fetchComments]);
+    if (!cleanTicketId) return;
+    let active = true;
+    deletedIdsRef.current.clear();
 
-  // 2. Cargar más comentarios (Paginación de 10 en 10 hacia atrás)
+    Promise.all([
+      commentService.getComments(cleanTicketId, { skip: 0, limit: PAGE_SIZE }),
+      commentService.getCommentsCount(cleanTicketId),
+    ])
+      .then(([list, count]) => {
+        if (!active) return;
+        setCommentState({ items: list, total: count });
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        console.error('Error al cargar comentarios:', err);
+        setError('No se pudieron cargar los comentarios.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [cleanTicketId]);
+
+  // 2. Cargar más comentarios (Paginación hacia atrás)
   const loadMoreComments = useCallback(async () => {
-    if (!cleanTicketId || loadingMore || comments.length >= totalCount) return;
+    if (!cleanTicketId || loadingMore || commentState.items.length >= commentState.total) return;
 
     setLoadingMore(true);
     try {
       const older = await commentService.getComments(cleanTicketId, {
-        skip: comments.length,
+        skip: commentState.items.length,
         limit: PAGE_SIZE,
       });
 
-      setComments((prev) => {
-        // Evitar duplicados si llegaron comentarios concurrentemente
-        const existingIds = new Set(prev.map((c) => c.id));
+      setCommentState((prev) => {
+        const existingIds = new Set(prev.items.map((c) => c.id));
         const filtered = older.filter((c) => !existingIds.has(c.id));
-        return [...prev, ...filtered];
+        return {
+          ...prev,
+          items: [...prev.items, ...filtered],
+        };
       });
     } catch (err: unknown) {
       console.error('Error al paginar comentarios:', err);
     } finally {
       setLoadingMore(false);
     }
-  }, [cleanTicketId, loadingMore, comments.length, totalCount]);
+  }, [cleanTicketId, loadingMore, commentState.items.length, commentState.total]);
 
   // 3. Crear comentario
   const addComment = useCallback(async (autor: string, mensaje: string): Promise<TicketComment | undefined> => {
@@ -76,12 +117,7 @@ export function useTicketComments(ticketId: string | number | undefined) {
         mensaje: mensaje.trim(),
       });
 
-      setComments((prev) => {
-        if (prev.some((c) => c.id === newComment.id)) return prev;
-        return [newComment, ...prev];
-      });
-      setTotalCount((prev) => prev + 1);
-
+      appendUniqueComment(newComment);
       return newComment;
     } catch (err: unknown) {
       console.error('Error al publicar comentario:', err);
@@ -89,7 +125,7 @@ export function useTicketComments(ticketId: string | number | undefined) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [cleanTicketId, isSubmitting]);
+  }, [cleanTicketId, isSubmitting, appendUniqueComment]);
 
   // 4. Eliminar comentario
   const deleteComment = useCallback(async (commentId: string): Promise<void> => {
@@ -97,27 +133,25 @@ export function useTicketComments(ticketId: string | number | undefined) {
 
     try {
       await commentService.deleteComment(cleanTicketId, commentId);
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-      setTotalCount((prev) => Math.max(0, prev - 1));
+      deletedIdsRef.current.add(commentId);
+      setCommentState((prev) => ({
+        items: prev.items.filter((c) => c.id !== commentId),
+        total: Math.max(0, prev.total - 1),
+      }));
     } catch (err: unknown) {
       console.error('Error al eliminar comentario:', err);
       throw err;
     }
   }, [cleanTicketId]);
 
-  // 5. Sincronización en vivo silenciosa mediante eventos SSE (sin alertas de escritorio)
+  // 5. Sincronización en vivo silenciosa mediante eventos SSE (evitando doble conteo por eco propio)
   useEffect(() => {
     if (!cleanTicketId) return;
 
     const handleNuevoComentario = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (String(detail?.ticket_id) === cleanTicketId && detail?.comentario) {
-        const commentData = detail.comentario as TicketComment;
-        setComments((prev) => {
-          if (prev.some((c) => c.id === commentData.id)) return prev;
-          return [commentData, ...prev];
-        });
-        setTotalCount((prev) => prev + 1);
+        appendUniqueComment(detail.comentario as TicketComment);
       }
     };
 
@@ -125,8 +159,14 @@ export function useTicketComments(ticketId: string | number | undefined) {
       const detail = (e as CustomEvent).detail;
       if (String(detail?.ticket_id) === cleanTicketId && detail?.comment_id) {
         const targetId = String(detail.comment_id);
-        setComments((prev) => prev.filter((c) => c.id !== targetId));
-        setTotalCount((prev) => Math.max(0, prev - 1));
+        if (deletedIdsRef.current.has(targetId)) {
+          deletedIdsRef.current.delete(targetId);
+          return;
+        }
+        setCommentState((prev) => ({
+          items: prev.items.filter((c) => c.id !== targetId),
+          total: Math.max(0, prev.total - 1),
+        }));
       }
     };
 
@@ -137,16 +177,16 @@ export function useTicketComments(ticketId: string | number | undefined) {
       window.removeEventListener('sse:nuevo_comentario', handleNuevoComentario);
       window.removeEventListener('sse:comentario_eliminado', handleComentarioEliminado);
     };
-  }, [cleanTicketId]);
+  }, [cleanTicketId, appendUniqueComment]);
 
   return {
-    comments,
-    totalCount,
+    comments: commentState.items,
+    totalCount: commentState.total,
     loading,
     loadingMore,
     isSubmitting,
     error,
-    hasMore: comments.length < totalCount,
+    hasMore: commentState.items.length < commentState.total,
     loadMoreComments,
     addComment,
     deleteComment,

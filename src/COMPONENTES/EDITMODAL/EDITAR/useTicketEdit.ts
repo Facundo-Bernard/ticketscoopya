@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { normalizeColaboradores, type Ticket, type Frecuencia } from '../../../TYPES';
 import type { TicketImageChanges } from '../../../SERVICES/ticketService';
+import {
+  loadEditTicketDraft,
+  saveEditTicketDraft,
+  clearEditTicketDraft,
+} from '../../../UTILS/ticketDraftStorage';
 
 export interface TicketEditFormData {
   titulo: string;
@@ -12,45 +17,98 @@ export interface TicketEditFormData {
   frecuencia?: Frecuencia | null;
 }
 
+function buildInitialFormData(ticket: Ticket | null): TicketEditFormData {
+  if (!ticket) {
+    return {
+      titulo: '',
+      descripcion: '',
+      estado: 'abierto',
+      colaborador: '',
+      prioridad: 'media',
+      columnId: 1,
+      frecuencia: undefined,
+    };
+  }
+  const colVal = ticket.columnId ?? ticket.columna ?? 1;
+  const colNum = typeof colVal === 'number' ? colVal : isNaN(Number(colVal)) ? 1 : Number(colVal);
+  return {
+    titulo: ticket.titulo || '',
+    descripcion: ticket.descripcion || '',
+    estado: ticket.estado || 'abierto',
+    colaborador: (ticket.colaboradores && ticket.colaboradores.length > 0 ? ticket.colaboradores.join(', ') : ticket.colaborador) || '',
+    prioridad: ticket.prioridad || 'media',
+    columnId: colNum,
+    frecuencia: ticket.frecuencia || undefined,
+  };
+}
+
+function hasEditFormChanges(current: TicketEditFormData, initial: TicketEditFormData): boolean {
+  if (current.titulo !== initial.titulo) return true;
+  if (current.descripcion !== initial.descripcion) return true;
+  if ((current.estado || '').toLowerCase() !== (initial.estado || '').toLowerCase()) return true;
+  if ((current.prioridad || '').toLowerCase() !== (initial.prioridad || '').toLowerCase()) return true;
+  if (Number(current.columnId) !== Number(initial.columnId)) return true;
+
+  const currentCols = normalizeColaboradores(current.colaborador).join(',');
+  const initialCols = normalizeColaboradores(initial.colaborador).join(',');
+  if (currentCols !== initialCols) return true;
+
+  const currentFreq = current.frecuencia ?? null;
+  const initialFreq = initial.frecuencia ?? null;
+  if (JSON.stringify(currentFreq) !== JSON.stringify(initialFreq)) return true;
+
+  return false;
+}
+
 export function useTicketEdit(
   ticket: Ticket | null,
   onSave?: (updatedTicket: Ticket, imageChanges: TicketImageChanges) => void | Promise<void>
 ) {
-  const [formData, setFormData] = useState<TicketEditFormData>({
-    titulo: '',
-    descripcion: '',
-    estado: 'abierto',
-    colaborador: '',
-    prioridad: 'media',
-    columnId: 1,
-    frecuencia: undefined
+  const initialData = useMemo(() => buildInitialFormData(ticket), [ticket]);
+
+  const [initialState] = useState<{ data: TicketEditFormData; recovered: boolean }>(() => {
+    const base = buildInitialFormData(ticket);
+    if (!ticket?.id) {
+      return { data: base, recovered: false };
+    }
+    const savedDraft = loadEditTicketDraft(ticket.id);
+    if (savedDraft && hasEditFormChanges(savedDraft, base)) {
+      return { data: savedDraft, recovered: true };
+    }
+    return { data: base, recovered: false };
   });
 
-  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [formData, setFormData] = useState<TicketEditFormData>(initialState.data);
+  const [hasRecoveredDraft, setHasRecoveredDraft] = useState<boolean>(initialState.recovered);
+  const [existingImages, setExistingImages] = useState<string[]>(() => ticket?.imagenes || []);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (ticket) {
-      const colVal = ticket.columnId ?? ticket.columna ?? 1;
-      const colNum = typeof colVal === 'number' ? colVal : isNaN(Number(colVal)) ? 1 : Number(colVal);
+  const hasTextChanges = hasEditFormChanges(formData, initialData);
+  const isDirty = hasTextChanges || newImages.length > 0 || removedImageIds.length > 0;
 
-      setFormData({
-        titulo: ticket.titulo || '',
-        descripcion: ticket.descripcion || '',
-        estado: ticket.estado || 'abierto',
-        colaborador: (ticket.colaboradores && ticket.colaboradores.length > 0 ? ticket.colaboradores.join(', ') : ticket.colaborador) || '',
-        prioridad: ticket.prioridad || 'media',
-        columnId: colNum,
-        frecuencia: ticket.frecuencia || undefined
-      });
-      setExistingImages(ticket.imagenes || []);
-      setNewImages([]);
-      setRemovedImageIds([]);
-      setErrorMessage(null);
+  useEffect(() => {
+    if (!ticket?.id || isSaving) return;
+
+    if (hasTextChanges) {
+      saveEditTicketDraft(ticket.id, formData);
+    } else {
+      clearEditTicketDraft(ticket.id);
     }
+  }, [ticket?.id, isSaving, hasTextChanges, formData]);
+
+  const resetToOriginal = useCallback(() => {
+    if (ticket?.id) {
+      clearEditTicketDraft(ticket.id);
+    }
+    setFormData(buildInitialFormData(ticket));
+    setExistingImages(ticket?.imagenes || []);
+    setNewImages([]);
+    setRemovedImageIds([]);
+    setHasRecoveredDraft(false);
+    setErrorMessage(null);
   }, [ticket]);
 
   const handleInputChange = (
@@ -123,15 +181,18 @@ export function useTicketEdit(
         newFiles: newImages,
         removedFileIds: removedImageIds,
       });
-    } catch (err: any) {
+      clearEditTicketDraft(ticket.id);
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { detail?: unknown; message?: string } }; message?: string };
+      const detail = errorObj?.response?.data?.detail;
       const msg =
         typeof err === 'string'
           ? err
-          : err.response?.data?.detail
-            ? (Array.isArray(err.response.data.detail)
-                ? err.response.data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
-                : String(err.response.data.detail))
-            : err.response?.data?.message || err.message || 'Error al guardar los cambios';
+          : detail
+            ? (Array.isArray(detail)
+                ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ')
+                : String(detail))
+            : errorObj?.response?.data?.message || errorObj?.message || 'Error al guardar los cambios';
       setErrorMessage(msg);
       console.error('Error al editar ticket:', err);
     } finally {
@@ -147,6 +208,9 @@ export function useTicketEdit(
     isSaving,
     errorMessage,
     creatorEmail,
+    isDirty,
+    hasRecoveredDraft,
+    resetToOriginal,
     handleInputChange,
     handleFrecuenciaChange,
     handleImageAdd,

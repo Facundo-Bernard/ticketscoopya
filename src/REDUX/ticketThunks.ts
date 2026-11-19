@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit'
 import type { CreateTicketInput, Ticket, TicketLock } from '../TYPES'
 import { ticketService, type TicketImageChanges, type TicketFilterParams, type TicketPagedResponse } from '../SERVICES/ticketService'
 import { messageFromError } from './errorUtils'
+import type { RootState } from './store'
 
 export { messageFromError } from './errorUtils'
 
@@ -113,7 +114,7 @@ export const fetchAllColumns = createAsyncThunk<
   'tickets/fetchAllColumns',
   async ({ filters, incluirResueltos, pageSize = 4, silent = false, resetPage = false }, { dispatch, getState }) => {
     const columns = [1, 2, 3, 4]
-    const state = getState() as any
+    const state = getState() as RootState
     await Promise.all(
       columns.map((columna) => {
         const colPage = resetPage ? 1 : (state?.tickets?.byColumn?.[columna]?.page || 1)

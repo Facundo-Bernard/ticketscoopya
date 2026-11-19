@@ -1,6 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { getClientEmail, setClientEmail } from '../../UTILS/storageUtils';
+import {
+  loadCreateTicketDraft,
+  saveCreateTicketDraft,
+  clearCreateTicketDraft,
+} from '../../UTILS/ticketDraftStorage';
 import type { CreateTicketInput, Ticket, Frecuencia } from '../../TYPES';
 import type { AppDispatch } from '../../REDUX/store';
 import { createTicket } from '../../REDUX/ticketThunks';
@@ -20,7 +25,38 @@ export interface TicketData {
 export interface UseTicketFormOptions {
   initialColumna?: number;
   isUser?: boolean;
+  isOpen?: boolean;
+  lockedEmail?: string | null;
   onSuccess?: (ticket: Ticket) => void;
+}
+
+function buildEmptyTicketData(columna: number, email: string): TicketData {
+  return {
+    titulo: '',
+    descripcion: '',
+    email,
+    asignar: '',
+    prioridad: 'media',
+    imagenes: [],
+    columna,
+    frecuencia: undefined,
+    hp_company_field: '',
+  };
+}
+
+function hasTextDraftContent(
+  data: Pick<TicketData, 'titulo' | 'descripcion' | 'email' | 'asignar' | 'prioridad' | 'columna' | 'frecuencia'>,
+  baselineEmail: string,
+  baselineColumna?: number,
+): boolean {
+  if (data.titulo.trim().length > 0) return true;
+  if (data.descripcion.trim().length > 0) return true;
+  if (data.asignar.trim().length > 0) return true;
+  if (data.prioridad !== 'media') return true;
+  if (data.frecuencia !== undefined) return true;
+  if (data.email.trim() !== baselineEmail.trim()) return true;
+  if (baselineColumna !== undefined && Number(data.columna) !== Number(baselineColumna)) return true;
+  return false;
 }
 
 export function useTicketForm(
@@ -28,35 +64,57 @@ export function useTicketForm(
   onSuccessCallback?: (ticket: Ticket) => void
 ) {
   const isUser = typeof options === 'object' && options !== null ? !!options.isUser : false;
+  const isOpen = typeof options === 'object' && options !== null ? options.isOpen : true;
+  const lockedEmail = typeof options === 'object' && options !== null ? (options.lockedEmail?.trim() || null) : null;
   const initialCol = typeof options === 'number' ? options : (options?.initialColumna || 1);
   const onSuccess = typeof options === 'object' && options !== null ? options.onSuccess : onSuccessCallback;
   const dispatch = useDispatch<AppDispatch>();
 
-  const [ticketData, setTicketData] = useState<TicketData>(() => ({
-    titulo: '',
-    descripcion: '',
+  const [baseline, setBaseline] = useState<{ email: string; columna: number }>(() => ({
     email: getClientEmail() || '',
-    asignar: '',
-    prioridad: 'media',
-    imagenes: [],
     columna: isUser ? 1 : (initialCol || 1),
-    frecuencia: undefined,
-    hp_company_field: ''
   }));
 
+  const [ticketData, setTicketData] = useState<TicketData>(() =>
+    buildEmptyTicketData(isUser ? 1 : (initialCol || 1), getClientEmail() || '')
+  );
+
+  const [hasRecoveredDraft, setHasRecoveredDraft] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Sincronizar columna inicial si cambia (al abrir modal desde otra columna)
+  const hasUnsavedData =
+    ticketData.imagenes.length > 0 ||
+    hasTextDraftContent(
+      ticketData,
+      baseline.email,
+      isUser ? undefined : baseline.columna
+    );
+
   useEffect(() => {
-    if (!isUser && initialCol) {
-      setTicketData((prev) => ({
-        ...prev,
-        columna: initialCol
-      }));
+    if (isUser || !isOpen || isSubmitting) return;
+
+    const hasPersistableData = hasTextDraftContent(
+      ticketData,
+      baseline.email,
+      hasRecoveredDraft ? undefined : baseline.columna
+    );
+
+    if (hasPersistableData) {
+      saveCreateTicketDraft({
+        titulo: ticketData.titulo,
+        descripcion: ticketData.descripcion,
+        email: ticketData.email,
+        asignar: ticketData.asignar,
+        prioridad: ticketData.prioridad,
+        columna: ticketData.columna,
+        frecuencia: ticketData.frecuencia,
+      });
+    } else {
+      clearCreateTicketDraft();
     }
-  }, [initialCol, isUser]);
+  }, [isUser, isOpen, isSubmitting, ticketData, hasRecoveredDraft, baseline]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -113,19 +171,47 @@ export function useTicketForm(
   };
 
   const resetForm = useCallback((newColumna?: number) => {
-    setTicketData({
-      titulo: '',
-      descripcion: '',
-      email: getClientEmail() || '',
-      asignar: '',
-      prioridad: 'media',
-      imagenes: [],
-      columna: isUser ? 1 : (newColumna ?? (initialCol || 1)),
-      frecuencia: undefined
-    });
+    const storedEmail = getClientEmail() || '';
+    const nextColumna = isUser ? 1 : (newColumna ?? (initialCol || 1));
+    setBaseline({ email: storedEmail, columna: nextColumna });
+    setTicketData(buildEmptyTicketData(nextColumna, storedEmail));
+    setHasRecoveredDraft(false);
     setErrorMessage(null);
     setSuccessMessage(null);
   }, [isUser, initialCol]);
+
+  const initSession = useCallback((newColumna?: number) => {
+    const storedEmail = getClientEmail() || '';
+    const nextColumna = isUser ? 1 : (newColumna ?? (initialCol || 1));
+    setBaseline({ email: storedEmail, columna: nextColumna });
+
+    if (!isUser) {
+      const savedDraft = loadCreateTicketDraft();
+      if (savedDraft && hasTextDraftContent(savedDraft, storedEmail)) {
+        setTicketData({
+          ...savedDraft,
+          imagenes: [],
+          hp_company_field: '',
+        });
+        setHasRecoveredDraft(true);
+        setErrorMessage(null);
+        setSuccessMessage(null);
+        return;
+      }
+    }
+
+    setTicketData(buildEmptyTicketData(nextColumna, storedEmail));
+    setHasRecoveredDraft(false);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+  }, [isUser, initialCol]);
+
+  const discardDraft = useCallback((newColumna?: number) => {
+    if (!isUser) {
+      clearCreateTicketDraft();
+    }
+    resetForm(newColumna);
+  }, [isUser, resetForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,11 +219,13 @@ export function useTicketForm(
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    const effectiveEmail = lockedEmail || ticketData.email;
+
     try {
       const ticketInput: CreateTicketInput = {
         titulo: ticketData.titulo,
         descripcion: ticketData.descripcion,
-        correo: ticketData.email,
+        correo: effectiveEmail,
         prioridad: isUser ? 'media' : ticketData.prioridad,
         asignar: isUser ? undefined : (ticketData.asignar || undefined),
         files: ticketData.imagenes,
@@ -145,12 +233,16 @@ export function useTicketForm(
         columna: isUser ? 1 : ticketData.columna,
         frecuencia: isUser ? undefined : ticketData.frecuencia,
         hp_company_field: ticketData.hp_company_field || undefined,
+        registrarSeguimiento: isUser,
       };
       const nuevoTicket = await dispatch(createTicket(ticketInput)).unwrap();
 
       // Persistir el email en LocalStorage para futuras creaciones (tanto usuario como panel central)
-      if (ticketData.email) {
-        setClientEmail(ticketData.email);
+      if (effectiveEmail) {
+        setClientEmail(effectiveEmail);
+      }
+      if (!isUser) {
+        clearCreateTicketDraft();
       }
 
       setSuccessMessage(
@@ -160,16 +252,11 @@ export function useTicketForm(
       );
       
       // Limpiar formulario después del envío exitoso (manteniendo el email persistido)
-      setTicketData({
-        titulo: '',
-        descripcion: '',
-        email: getClientEmail() || ticketData.email || '',
-        asignar: '',
-        prioridad: 'media',
-        imagenes: [],
-        columna: isUser ? 1 : (initialCol || 1),
-        frecuencia: undefined
-      });
+      const nextEmail = lockedEmail || getClientEmail() || effectiveEmail || '';
+      const nextColumna = isUser ? 1 : (initialCol || 1);
+      setBaseline({ email: nextEmail, columna: nextColumna });
+      setTicketData(buildEmptyTicketData(nextColumna, nextEmail));
+      setHasRecoveredDraft(false);
 
       if (onSuccess) {
         onSuccess(nuevoTicket);
@@ -191,12 +278,18 @@ export function useTicketForm(
     window.history.back();
   };
 
+  const exposedTicketData = lockedEmail
+    ? { ...ticketData, email: lockedEmail }
+    : ticketData;
+
   return {
-    ticketData,
+    ticketData: exposedTicketData,
     isSubmitting,
     errorMessage,
     successMessage,
-    hasStoredEmail: isUser && Boolean(getClientEmail()),
+    hasStoredEmail: isUser && Boolean(lockedEmail || getClientEmail()),
+    hasUnsavedData,
+    hasRecoveredDraft,
     handleInputChange,
     handleImageUpload,
     handleRemoveImage,
@@ -205,6 +298,8 @@ export function useTicketForm(
     handleColumnaChange,
     handleFrecuenciaChange,
     resetForm,
+    initSession,
+    discardDraft,
     handleSubmit,
     handleVolver
   };

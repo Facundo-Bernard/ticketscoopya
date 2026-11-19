@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
 import { notificationService } from '../SERVICES/notificationService'
 import { getOperatorIdentity } from '../UTILS/storageUtils'
 
@@ -13,42 +14,47 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray
 }
 
+const isPushApiSupported = (): boolean =>
+  typeof window !== 'undefined' &&
+  'serviceWorker' in navigator &&
+  'PushManager' in window &&
+  'Notification' in window
+
 export function usePushNotifications() {
-  const [isSupported, setIsSupported] = useState(false)
+  const [isSupported] = useState<boolean>(isPushApiSupported)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [permission, setPermission] = useState<NotificationPermission>('default')
+  const [permission, setPermission] = useState<NotificationPermission>(() =>
+    isPushApiSupported() ? Notification.permission : 'default'
+  )
 
   const myEmail = getOperatorIdentity() || ''
 
-  // Verificar soporte y suscripción existente
+  // Verificar suscripción existente de forma asíncrona
   useEffect(() => {
-    const supported =
-      typeof window !== 'undefined' &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window &&
-      'Notification' in window
+    if (!isSupported) return
 
-    setIsSupported(supported)
-
-    if (supported) {
-      setPermission(Notification.permission)
-
-      navigator.serviceWorker.ready
-        .then((reg) => reg.pushManager.getSubscription())
-        .then((sub) => {
+    let active = true
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => {
+        if (active) {
           setIsSubscribed(Boolean(sub))
-        })
-        .catch((err) => {
-          console.warn('Error al verificar suscripción push:', err)
-        })
+        }
+      })
+      .catch((err) => {
+        console.warn('Error al verificar suscripción push:', err)
+      })
+
+    return () => {
+      active = false
     }
-  }, [])
+  }, [isSupported])
 
   // Suscribir este dispositivo a Notificaciones Push
   const subscribe = useCallback(async (): Promise<boolean> => {
     if (!isSupported) {
-      alert('Tu navegador o dispositivo no soporta notificaciones push en segundo plano.')
+      toast.warning('Tu navegador o dispositivo no soporta notificaciones push en segundo plano.')
       return false
     }
 
@@ -58,7 +64,7 @@ export function usePushNotifications() {
       const perm = await Notification.requestPermission()
       setPermission(perm)
       if (perm !== 'granted') {
-        alert('Se denegó el permiso para enviar notificaciones.')
+        toast.warning('Se denegó el permiso para enviar notificaciones.')
         setIsLoading(false)
         return false
       }
@@ -97,7 +103,7 @@ export function usePushNotifications() {
       return true
     } catch (error) {
       console.error('Error al suscribir a notificaciones push:', error)
-      alert('No se pudo activar las notificaciones push en este dispositivo.')
+      toast.error('No se pudo activar las notificaciones push en este dispositivo.')
       return false
     } finally {
       setIsLoading(false)
@@ -137,7 +143,7 @@ export function usePushNotifications() {
       return res
     } catch (error) {
       console.error('Error al enviar push de prueba:', error)
-      alert('Error al enviar la notificación de prueba.')
+      toast.error('Error al enviar la notificación de prueba.')
       throw error
     } finally {
       setIsLoading(false)

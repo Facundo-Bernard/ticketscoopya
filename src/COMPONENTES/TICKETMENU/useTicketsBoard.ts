@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { toast } from 'sonner'
 import {
   checkTicketLock,
   deleteTicket,
@@ -9,6 +10,7 @@ import {
   markTicketAsDeleting,
   markTicketAsRead,
   markTicketAsUpdated,
+  removeTicketFromStream,
   saveTicket,
   saveTicketWithImages,
   unlockTicket,
@@ -28,8 +30,6 @@ export interface TicketModalData {
 }
 
 export function useTicketsBoard() {
-  useTicketStream()
-
   const [showFinished, setShowFinished] = useState(false)
 
   const {
@@ -47,6 +47,61 @@ export function useTicketsBoard() {
   const dispatch = useDispatch<AppDispatch>()
   const [isDeleting, setIsDeleting] = useState(false)
   const myEmail = (getOperatorIdentity() || '').toLowerCase()
+  const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const triggerSilentResync = useCallback(() => {
+    dispatch(
+      fetchAllColumns({
+        filters,
+        incluirResueltos: showFinished,
+        pageSize: TICKETS_PER_COLUMN,
+        silent: true,
+      }),
+    )
+  }, [dispatch, filters, showFinished])
+
+  const scheduleSilentResync = useCallback(() => {
+    if (resyncTimerRef.current) {
+      clearTimeout(resyncTimerRef.current)
+    }
+    resyncTimerRef.current = setTimeout(() => {
+      resyncTimerRef.current = null
+      triggerSilentResync()
+    }, 250)
+  }, [triggerSilentResync])
+
+  useEffect(() => {
+    return () => {
+      if (resyncTimerRef.current) {
+        clearTimeout(resyncTimerRef.current)
+      }
+    }
+  }, [])
+
+  const handleStreamTicketEvent = useCallback(
+    (_kind: 'created' | 'updated', ticket: Ticket) => {
+      const estado = (ticket.estado || 'abierto').toLowerCase()
+      const isFinishedTicket = estado === 'resuelto' || estado === 'cerrado'
+      const matchesView = showFinished ? isFinishedTicket : !isFinishedTicket
+
+      if (!matchesView) {
+        dispatch(removeTicketFromStream({ id: ticket.id }))
+        scheduleSilentResync()
+        return
+      }
+
+      const anyColNotOnFirstPage = Object.values(byColumn).some((c) => c.page > 1)
+      if (filterCount > 0 || anyColNotOnFirstPage) {
+        scheduleSilentResync()
+      }
+    },
+    [showFinished, filterCount, byColumn, dispatch, scheduleSilentResync],
+  )
+
+  useTicketStream({
+    onResync: triggerSilentResync,
+    onTicketEvent: handleStreamTicketEvent,
+  })
 
   const handleColumnPageChange = (columna: number, newPage: number) => {
     dispatch(
@@ -85,7 +140,7 @@ export function useTicketsBoard() {
   const handleRequestDelete = (ticket: Ticket) => {
     const lock = locks[String(ticket.id)]
     if (lock?.usuario && lock.usuario.toLowerCase() !== myEmail) {
-      alert(`No se puede eliminar el ticket porque está siendo editado por ${lock.usuario}.`)
+      toast.error(`No se puede eliminar el ticket porque está siendo editado por ${lock.usuario}.`)
       return
     }
     deleteModal.openModal(ticket)
@@ -158,7 +213,7 @@ export function useTicketsBoard() {
     const targetCol = Number(ticketToDelete.columnId ?? ticketToDelete.columna ?? 1)
     const lock = locks[String(ticketId)]
     if (lock?.usuario && lock.usuario.toLowerCase() !== myEmail) {
-      alert(`No se puede eliminar el ticket porque está siendo editado por ${lock.usuario}.`)
+      toast.error(`No se puede eliminar el ticket porque está siendo editado por ${lock.usuario}.`)
       deleteModal.closeModal()
       return
     }
@@ -191,7 +246,7 @@ export function useTicketsBoard() {
     } catch (error: unknown) {
       console.error('Error al eliminar ticket:', error)
       dispatch(unmarkTicketAsDeleting(ticketId))
-      alert(typeof error === 'string'
+      toast.error(typeof error === 'string'
         ? error
         : 'Error al eliminar el ticket. Es posible que esté siendo editado por otro usuario.')
     } finally {

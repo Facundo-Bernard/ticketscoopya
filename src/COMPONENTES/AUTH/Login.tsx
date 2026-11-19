@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { authService } from '../../SERVICES/authService';
@@ -27,14 +28,16 @@ export const Login: React.FC = () => {
       const response = await authService.login(email, password);
       toast.success(`¡Bienvenido/a, ${response.user.nombre || 'Administrador'}!`);
       navigate(from, { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMsg = 'Credenciales incorrectas o cuenta inactiva.';
-      if (!err.response || err.code === 'ERR_NETWORK') {
-        errorMsg = 'No se pudo conectar con el servidor backend en http://localhost:8000. Verificá que esté encendido.';
-      } else if (err.response.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.response.data?.detail) {
-        errorMsg = err.response.data.detail;
+      if (axios.isAxiosError<{ message?: string; detail?: string }>(err)) {
+        if (!err.response || err.code === 'ERR_NETWORK') {
+          errorMsg = 'No se pudo conectar con el servidor backend. Verificá tu conexión o que el servicio esté activo.';
+        } else if (err.response.data?.message) {
+          errorMsg = err.response.data.message;
+        } else if (err.response.data?.detail) {
+          errorMsg = err.response.data.detail;
+        }
       }
       toast.error(errorMsg);
     } finally {

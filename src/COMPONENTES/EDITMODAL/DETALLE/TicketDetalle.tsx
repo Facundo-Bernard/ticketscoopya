@@ -26,53 +26,44 @@ import { TicketComentarios } from './COMENTARIOS';
 
 interface TicketDetalleProps {
   ticket: Ticket | null;
+  onCommentDraftChange?: (hasDraft: boolean) => void;
 }
 
-const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
+const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket, onCommentDraftChange }) => {
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState<boolean>(true);
   const initialMetas = useMemo(() => {
     return (ticket?.imagenes || []).map(getAttachmentMeta);
   }, [ticket?.imagenes]);
 
-  const [asyncResolved, setAsyncResolved] = useState<AttachmentMeta[] | null>(null);
-  const [isResolving, setIsResolving] = useState<boolean>(() => {
-    return (ticket?.imagenes || []).some((item) => {
-      const meta = getAttachmentMeta(item);
-      return !meta.ext && !meta.isLocal;
-    });
-  });
+  const attachmentsKey = (ticket?.imagenes || []).join('|');
+  const hasUnresolved = initialMetas.some((meta) => !meta.ext && !meta.isLocal);
+  const [asyncResult, setAsyncResult] = useState<{ key: string; metas: AttachmentMeta[] } | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const hasUnresolved = (ticket?.imagenes || []).some((item) => {
-      const meta = getAttachmentMeta(item);
-      return !meta.ext && !meta.isLocal;
-    });
+    if (!hasUnresolved) return;
 
-    if (hasUnresolved) {
-      setIsResolving(true);
-      Promise.all((ticket?.imagenes || []).map((item) => resolveAttachmentMeta(item)))
-        .then((metas) => {
-          if (isMounted) {
-            setAsyncResolved(metas);
-            setIsResolving(false);
-          }
-        })
-        .catch(() => {
-          if (isMounted) {
-            setIsResolving(false);
-          }
-        });
-    } else {
-      setIsResolving(false);
-    }
+    let isMounted = true;
+    const imagenes = ticket?.imagenes || [];
+
+    Promise.all(imagenes.map((item) => resolveAttachmentMeta(item)))
+      .then((metas) => {
+        if (isMounted) {
+          setAsyncResult({ key: attachmentsKey, metas });
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAsyncResult({ key: attachmentsKey, metas: initialMetas });
+        }
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [ticket?.imagenes]);
+  }, [hasUnresolved, attachmentsKey, ticket?.imagenes, initialMetas]);
 
-  const resolvedAttachments = asyncResolved ?? initialMetas;
+  const isResolving = hasUnresolved && asyncResult?.key !== attachmentsKey;
+  const resolvedAttachments = asyncResult?.key === attachmentsKey ? asyncResult.metas : initialMetas;
 
   if (!ticket) return null;
 
@@ -156,7 +147,7 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
           <div className={`attachment-collapse-wrapper ${isAttachmentsOpen ? 'is-open' : ''}`}>
             <div className="attachment-collapse-inner">
               <div className="pt-1 pb-1">
-                {isResolving && !asyncResolved ? (
+                {isResolving ? (
                   <div className="d-flex align-items-center gap-2 text-muted small py-2 ps-2">
                     <span className="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true" />
                     <span>Detectando archivos adjuntos...</span>
@@ -311,7 +302,7 @@ const TicketDetalle: React.FC<TicketDetalleProps> = ({ ticket }) => {
       )}
 
       {/* SECCIÓN DE COMENTARIOS E HISTORIAL */}
-      <TicketComentarios ticketId={ticket.id} />
+      <TicketComentarios ticketId={ticket.id} onDraftChange={onCommentDraftChange} />
 
       <hr className="mt-4 mb-3" />
       <div className="d-flex flex-wrap justify-content-between text-muted small gap-2">

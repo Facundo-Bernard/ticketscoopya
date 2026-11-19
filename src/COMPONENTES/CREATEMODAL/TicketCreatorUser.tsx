@@ -1,13 +1,50 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert } from 'react-bootstrap';
 import { toast } from 'sonner';
 import Header from '../HEADER/Header';
 import { useTicketForm } from './useTicketForm';
 import { TicketFormCampos, TicketFormImagenes, TicketFormFooter } from '../COMPONENTESFORM';
-import { AlertCircleIcon } from '../COMUN/Icons';
+import { MisSolicitudesPanel } from '../PORTAL';
+import { useRequesterTickets } from '../../hooks/useRequesterTickets';
+import { SparklesIcon } from '../COMUN/Icons';
+
+type PortalTab = 'crear' | 'mis-solicitudes';
+const HISTORY_ANNOUNCEMENT_KEY = 'coopya_history_announcement_v1_seen';
+
+function readAnnouncementSeen(): boolean {
+  try {
+    return localStorage.getItem(HISTORY_ANNOUNCEMENT_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 export function TicketCreatorUser() {
+  const [activeTab, setActiveTab] = useState<PortalTab>('crear');
+  const [hasSeenAnnouncement, setHasSeenAnnouncement] = useState<boolean>(readAnnouncementSeen);
+  const requester = useRequesterTickets();
+
+  const markAnnouncementSeen = useCallback(() => {
+    try {
+      localStorage.setItem(HISTORY_ANNOUNCEMENT_KEY, 'true');
+    } catch {
+      // Ignorar si Storage no está disponible
+    }
+    setHasSeenAnnouncement(true);
+    toast.dismiss('portal-history-announcement');
+  }, []);
+
+  const openMisSolicitudes = useCallback(() => {
+    markAnnouncementSeen();
+    setActiveTab('mis-solicitudes');
+  }, [markAnnouncementSeen]);
+
+  const handleTicketCreated = useCallback(() => {
+    void requester.refresh();
+    requester.reconnectStream();
+  }, [requester]);
+
   const {
     ticketData,
     isSubmitting,
@@ -19,84 +56,173 @@ export function TicketCreatorUser() {
     handleRemoveImage,
     resetForm,
     handleSubmit
-  } = useTicketForm({ isUser: true });
+  } = useTicketForm({
+    isUser: true,
+    lockedEmail: requester.linkedEmail,
+    onSuccess: handleTicketCreated,
+  });
 
   const trackingId = successMessage ? successMessage.split(':').pop()?.trim() : null;
 
-  // Notificar al usuario sobre los nuevos formatos de archivo admitidos
+  // Anunciar la nueva sección de seguimiento (una única vez hasta que el usuario la descarte o la visite)
   useEffect(() => {
-    if (successMessage) return;
+    if (hasSeenAnnouncement || successMessage || activeTab === 'mis-solicitudes') return;
 
-    // Limpiar claves viejas si quedaron guardadas en el navegador
     localStorage.removeItem('coopya_attachment_announcement_v1');
 
     const timer = setTimeout(() => {
-      toast('Novedad: Nuevos formatos admitidos', {
-        id: 'attachment-announcement',
-        icon: (
+      toast(
+        <div className="d-flex align-items-start gap-3 w-100">
           <div
             style={{
-              width: 28,
-              height: 28,
+              width: 34,
+              height: 34,
               borderRadius: '50%',
-              backgroundColor: '#fee2e2',
+              backgroundColor: '#dbeafe',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              color: '#dc2626',
-              marginRight: '10px',
+              color: 'var(--coopya-navy)',
+              marginTop: '2px',
             }}
           >
-            <AlertCircleIcon size={16} />
+            <SparklesIcon size={17} />
           </div>
-        ),
-        style: {
-          backgroundColor: '#fef2f2',
-          borderColor: '#fecaca',
-          color: '#991b1b',
-          boxShadow: '0 8px 24px -4px rgba(220, 38, 38, 0.12)',
-        },
-        description: (
-          <div className="mt-1">
-            <div className="mb-2 lh-sm" style={{ fontSize: '12.5px', color: '#7f1d1d' }}>
-              Ahora podés adjuntar documentos PDF, planillas Excel o CSV y textos planos además de fotos.
+
+          <div className="flex-grow-1 min-w-0">
+            <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
+              <span
+                className="badge rounded-pill px-2 py-1"
+                style={{
+                  fontSize: '10px',
+                  letterSpacing: '0.4px',
+                  backgroundColor: 'var(--coopya-navy)',
+                  color: '#ffffff',
+                }}
+              >
+                NUEVA FUNCIÓN
+              </span>
+              <span className="fw-bold" style={{ color: 'var(--coopya-navy)' }}>
+                Seguí tus solicitudes
+              </span>
             </div>
-            <div className="mt-2">
+
+            <div className="mb-2 lh-sm" style={{ fontSize: '12.5px', color: '#1e3a8a' }}>
+              Ahora podés ver el historial de los tickets que enviaste y consultar en qué estado se encuentran.
+            </div>
+
+            <div className="d-flex align-items-center gap-2 mt-2">
               <button
                 type="button"
-                className="btn btn-sm btn-coopya-red px-3 py-1 fw-semibold"
-                style={{ fontSize: '12px' }}
-                onClick={() => toast.dismiss('attachment-announcement')}
+                className="btn btn-sm px-3 py-1 fw-semibold"
+                style={{
+                  fontSize: '12px',
+                  backgroundColor: 'var(--coopya-navy)',
+                  color: '#ffffff',
+                  borderColor: 'var(--coopya-navy)',
+                  borderRadius: '6px',
+                }}
+                onClick={openMisSolicitudes}
+              >
+                Ir a Mis Solicitudes
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-link text-decoration-none px-2 py-1 fw-medium"
+                style={{ fontSize: '12px', color: '#475569' }}
+                onClick={markAnnouncementSeen}
               >
                 Entendido
               </button>
             </div>
           </div>
-        ),
-        duration: 14000,
-      });
+        </div>,
+        {
+          id: 'portal-history-announcement',
+          style: {
+            backgroundColor: '#eff6ff',
+            borderColor: '#bfdbfe',
+            color: 'var(--coopya-navy)',
+            boxShadow: '0 10px 26px -4px rgba(0, 43, 94, 0.16)',
+            padding: '14px 16px',
+          },
+          duration: 18000,
+        },
+      );
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [successMessage]);
+  }, [hasSeenAnnouncement, successMessage, activeTab, openMisSolicitudes, markAnnouncementSeen]);
 
   return (
     <div className="min-vh-100 d-flex flex-column">
       <Header subtitle="Portal de Solicitudes y Mesa de Ayuda" className="mb-0">
-        <Link
-          to="/login"
-          className="btn btn-sm btn-outline-secondary px-3 py-1 fw-medium"
-          style={{ fontSize: '12px' }}
-        >
-          🔒 Acceso Operadores
-        </Link>
+        <div className="d-flex align-items-center flex-wrap gap-2">
+          <button
+            type="button"
+            className={`btn btn-sm px-3 py-1 fw-semibold ${activeTab === 'crear' ? 'btn-coopya-red' : 'btn-outline-secondary'}`}
+            style={{ fontSize: '12px' }}
+            onClick={() => setActiveTab('crear')}
+          >
+            + Nuevo Problema
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm px-3 py-1 fw-semibold d-inline-flex align-items-center gap-2 ${activeTab === 'mis-solicitudes' ? 'btn-coopya-red' : 'btn-outline-secondary'}`}
+            style={{ fontSize: '12px' }}
+            onClick={openMisSolicitudes}
+          >
+            <span>Mis Solicitudes</span>
+            {!hasSeenAnnouncement && (
+              <span
+                className="badge rounded-pill"
+                style={{
+                  fontSize: '10px',
+                  backgroundColor: 'var(--coopya-navy)',
+                  color: '#ffffff',
+                }}
+              >
+                Nuevo
+              </span>
+            )}
+            {requester.tickets.length > 0 && (
+              <span
+                className={`badge rounded-pill ${activeTab === 'mis-solicitudes' ? 'bg-white text-danger' : 'bg-secondary text-white'}`}
+                style={{ fontSize: '10.5px' }}
+              >
+                {requester.tickets.length}
+              </span>
+            )}
+          </button>
+          <Link
+            to="/login"
+            className="btn btn-sm btn-outline-secondary px-3 py-1 fw-medium"
+            style={{ fontSize: '12px' }}
+          >
+            🔒 Acceso Operadores
+          </Link>
+        </div>
       </Header>
 
       {/* Contenido Principal */}
       <main className="flex-grow-1 py-4 py-md-5">
         <div className="container portal-container px-3">
-          {successMessage ? (
+          {activeTab === 'mis-solicitudes' ? (
+            <MisSolicitudesPanel
+              tickets={requester.tickets}
+              linkedEmail={requester.linkedEmail}
+              isLoading={requester.isLoading}
+              error={requester.error}
+              onRefresh={requester.refresh}
+              onRequestCode={requester.requestCode}
+              onVerifyCode={requester.verifyCode}
+              onUnlinkHistory={async () => {
+                await requester.unlinkHistory();
+                resetForm();
+              }}
+            />
+          ) : successMessage ? (
             /* Pantalla de Éxito aislada sin redirección */
             <div className="portal-success-card">
               <div className="portal-success-icon-box">✓</div>
@@ -113,10 +239,20 @@ export function TicketCreatorUser() {
               )}
 
               <p className="small text-muted mb-4">
-                Podrás hacer el seguimiento del estado aguardando la notificación a tu correo electrónico.
+                Podrás seguir el avance de tu solicitud en tiempo real desde la pestaña <strong>Mis Solicitudes</strong>.
               </p>
 
-              <div className="d-flex justify-content-center">
+              <div className="d-flex flex-wrap justify-content-center gap-2">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary px-4 py-2 fw-semibold"
+                  onClick={() => {
+                    resetForm();
+                    setActiveTab('mis-solicitudes');
+                  }}
+                >
+                  Ver mis solicitudes
+                </button>
                 <button
                   type="button"
                   className="btn btn-coopya-red px-4 py-2 fw-semibold"

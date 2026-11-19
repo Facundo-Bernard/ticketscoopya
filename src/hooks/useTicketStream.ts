@@ -1,27 +1,40 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../REDUX/store';
-import { 
-  addTicketFromStream, 
-  updateTicketFromStream, 
-  removeTicketFromStream, 
-  setTicketLock, 
+import {
+  addTicketFromStream,
+  updateTicketFromStream,
+  removeTicketFromStream,
+  setTicketLock,
   clearTicketLock,
   markTicketAsDeleting,
 } from '../REDUX/ticketsSlice';
 import { mapBackendToFrontendTicket } from '../SERVICES/ticketService';
-import { API_BASE_URL } from '../SERVICES/api';
+import { api, API_BASE_URL } from '../SERVICES/api';
+import type { Ticket } from '../TYPES';
+
+export interface UseTicketStreamOptions {
+  onResync?: () => void;
+  onTicketEvent?: (kind: 'created' | 'updated', ticket: Ticket) => void;
+}
+
+const HIDDEN_RESYNC_THRESHOLD_MS = 10_000;
+const AUTH_CHECK_THROTTLE_MS = 15_000;
 
 /**
  * Hook para escuchar tickets en tiempo real mediante Server-Sent Events (SSE):
- * - nuevo_ticket / ticket_creado: inserta el ticket en Redux y emite notificación de escritorio
- * - ticket_actualizado: actualiza en vivo el ticket en Redux (cambio de columna, prioridad, estado, etc.)
- * - ticket_eliminado: remueve el ticket del tablero de todos los operadores
- * - ticket_bloqueado: registra el candado de edición exclusiva de un operador
- * - ticket_desbloqueado: libera el candado de edición
+ * - Resincroniza automáticamente al reconectar, al volver a la pestaña tras >10s inactiva o al recuperar conexión.
+ * - Detecta sesiones expiradas (401) en errores SSE para redirigir a /login.
  */
-export function useTicketStream(): void {
+export function useTicketStream(options?: UseTicketStreamOptions): void {
   const dispatch = useDispatch<AppDispatch>();
+  const onResyncRef = useRef(options?.onResync);
+  const onTicketEventRef = useRef(options?.onTicketEvent);
+
+  useEffect(() => {
+    onResyncRef.current = options?.onResync;
+    onTicketEventRef.current = options?.onTicketEvent;
+  }, [options?.onResync, options?.onTicketEvent]);
 
   useEffect(() => {
     // Seguridad: jamás activar stream ni pedir notificaciones en el portal de usuarios finales
@@ -29,40 +42,38 @@ export function useTicketStream(): void {
       return;
     }
 
-    // Conectar al canal SSE del backend mediante credenciales de sesión en cookies HttpOnly
     const streamUrl = `${API_BASE_URL}/tickets/stream`;
-    const eventSource = new EventSource(streamUrl, { withCredentials: true });
+    let eventSource: EventSource | null = null;
+    let hasConnectedOnce = false;
+    let hiddenSince: number | null = null;
+    let lastAuthCheckAt = 0;
 
-    // Handler para nuevo ticket creado
     const handleNuevoTicket = (event: MessageEvent) => {
       try {
         if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') {
           return;
         }
-
         const rawData = JSON.parse(event.data);
         const ticket = mapBackendToFrontendTicket(rawData);
-
-        // Actualizar estado en el store de Redux
         dispatch(addTicketFromStream(ticket));
+        onTicketEventRef.current?.('created', ticket);
       } catch (err) {
         console.error('Error procesando evento SSE nuevo_ticket:', err);
       }
     };
 
-    // Handler para ticket actualizado (edición, cambio de columna, reasignación)
     const handleTicketActualizado = (event: MessageEvent) => {
       try {
         if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
         const rawData = JSON.parse(event.data);
         const ticket = mapBackendToFrontendTicket(rawData);
         dispatch(updateTicketFromStream(ticket));
+        onTicketEventRef.current?.('updated', ticket);
       } catch (err) {
         console.error('Error procesando evento SSE ticket_actualizado:', err);
       }
     };
 
-    // Handler para ticket eliminado
     const handleTicketEliminado = (event: MessageEvent) => {
       try {
         if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
@@ -84,7 +95,6 @@ export function useTicketStream(): void {
       }
     };
 
-    // Handler para ticket bloqueado (otro operador lo está editando)
     const handleTicketBloqueado = (event: MessageEvent) => {
       try {
         if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
@@ -102,7 +112,6 @@ export function useTicketStream(): void {
       }
     };
 
-    // Handler para ticket desbloqueado
     const handleTicketDesbloqueado = (event: MessageEvent) => {
       try {
         if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
@@ -116,7 +125,6 @@ export function useTicketStream(): void {
       }
     };
 
-    // Handler para nuevo comentario (en vivo sin F5, sin alertas de escritorio)
     const handleNuevoComentario = (event: MessageEvent) => {
       try {
         if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
@@ -127,7 +135,7 @@ export function useTicketStream(): void {
           window.dispatchEvent(
             new CustomEvent('sse:nuevo_comentario', {
               detail: { ticket_id: String(ticketId), comentario },
-            })
+            }),
           );
         }
       } catch (err) {
@@ -135,7 +143,6 @@ export function useTicketStream(): void {
       }
     };
 
-    // Handler para comentario eliminado (en vivo sin F5)
     const handleComentarioEliminado = (event: MessageEvent) => {
       try {
         if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
@@ -146,7 +153,7 @@ export function useTicketStream(): void {
           window.dispatchEvent(
             new CustomEvent('sse:comentario_eliminado', {
               detail: { ticket_id: String(ticketId), comment_id: String(commentId) },
-            })
+            }),
           );
         }
       } catch (err) {
@@ -154,26 +161,22 @@ export function useTicketStream(): void {
       }
     };
 
-    // Registro de listeners SSE
-    eventSource.addEventListener('nuevo_ticket', handleNuevoTicket as EventListener);
-    eventSource.addEventListener('ticket_creado', handleNuevoTicket as EventListener);
-    // Los eventos sin nombre se atienden únicamente mediante onmessage.
-    // No registrar además addEventListener('message') para evitar procesarlos dos veces.
-    eventSource.onmessage = handleNuevoTicket;
-
-    eventSource.addEventListener('ticket_actualizado', handleTicketActualizado as EventListener);
-    eventSource.addEventListener('ticket_eliminado', handleTicketEliminado as EventListener);
-    eventSource.addEventListener('ticket_bloqueado', handleTicketBloqueado as EventListener);
-    eventSource.addEventListener('ticket_desbloqueado', handleTicketDesbloqueado as EventListener);
-    eventSource.addEventListener('nuevo_comentario', handleNuevoComentario as EventListener);
-    eventSource.addEventListener('comentario_eliminado', handleComentarioEliminado as EventListener);
-
-    eventSource.onerror = (err) => {
-      console.warn('Conexión SSE interrumpida. EventSource reconectará automáticamente.', err);
+    const handleCodigoAccesoActualizado = (event: MessageEvent) => {
+      try {
+        if (!event.data || event.data.trim() === '' || event.data.trim() === 'ping') return;
+        const rawData = JSON.parse(event.data);
+        window.dispatchEvent(
+          new CustomEvent('tickets:requester_code_updated', {
+            detail: rawData,
+          }),
+        );
+      } catch (err) {
+        console.error('Error procesando evento SSE codigo_acceso_actualizado:', err);
+      }
     };
 
-    // 3. Limpieza al desmontar
-    return () => {
+    const closeStream = () => {
+      if (!eventSource) return;
       eventSource.removeEventListener('nuevo_ticket', handleNuevoTicket as EventListener);
       eventSource.removeEventListener('ticket_creado', handleNuevoTicket as EventListener);
       eventSource.removeEventListener('ticket_actualizado', handleTicketActualizado as EventListener);
@@ -182,7 +185,76 @@ export function useTicketStream(): void {
       eventSource.removeEventListener('ticket_desbloqueado', handleTicketDesbloqueado as EventListener);
       eventSource.removeEventListener('nuevo_comentario', handleNuevoComentario as EventListener);
       eventSource.removeEventListener('comentario_eliminado', handleComentarioEliminado as EventListener);
+      eventSource.removeEventListener('codigo_acceso_actualizado', handleCodigoAccesoActualizado as EventListener);
       eventSource.close();
+      eventSource = null;
+    };
+
+    const connectStream = () => {
+      closeStream();
+      const es = new EventSource(streamUrl, { withCredentials: true });
+      eventSource = es;
+
+      es.addEventListener('nuevo_ticket', handleNuevoTicket as EventListener);
+      es.addEventListener('ticket_creado', handleNuevoTicket as EventListener);
+      es.onmessage = handleNuevoTicket;
+      es.addEventListener('ticket_actualizado', handleTicketActualizado as EventListener);
+      es.addEventListener('ticket_eliminado', handleTicketEliminado as EventListener);
+      es.addEventListener('ticket_bloqueado', handleTicketBloqueado as EventListener);
+      es.addEventListener('ticket_desbloqueado', handleTicketDesbloqueado as EventListener);
+      es.addEventListener('nuevo_comentario', handleNuevoComentario as EventListener);
+      es.addEventListener('comentario_eliminado', handleComentarioEliminado as EventListener);
+      es.addEventListener('codigo_acceso_actualizado', handleCodigoAccesoActualizado as EventListener);
+
+      es.onopen = () => {
+        if (hasConnectedOnce) {
+          onResyncRef.current?.();
+        }
+        hasConnectedOnce = true;
+      };
+
+      es.onerror = () => {
+        const now = Date.now();
+        if (now - lastAuthCheckAt >= AUTH_CHECK_THROTTLE_MS) {
+          lastAuthCheckAt = now;
+          // Si la sesión expiró, el interceptor de Axios redirige a /login en lugar de quedar en loop
+          api.get('/auth/me').catch(() => {});
+        }
+      };
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenSince = Date.now();
+        return;
+      }
+
+      const wasHiddenMs = hiddenSince ? Date.now() - hiddenSince : 0;
+      hiddenSince = null;
+
+      if (!eventSource || eventSource.readyState === EventSource.CLOSED) {
+        connectStream();
+        onResyncRef.current?.();
+      } else if (wasHiddenMs >= HIDDEN_RESYNC_THRESHOLD_MS) {
+        onResyncRef.current?.();
+      }
+    };
+
+    const handleOnline = () => {
+      if (!eventSource || eventSource.readyState === EventSource.CLOSED) {
+        connectStream();
+      }
+      onResyncRef.current?.();
+    };
+
+    connectStream();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      closeStream();
     };
   }, [dispatch]);
 }

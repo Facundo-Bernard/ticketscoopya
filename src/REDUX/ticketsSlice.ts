@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { Ticket, TicketLock } from '../TYPES'
+import type { TicketPagedResponse } from '../SERVICES/ticketService'
 import {
   fetchTickets,
   fetchColumnTickets,
@@ -262,8 +263,8 @@ const ticketsSlice = createSlice({
       })
       .addCase(fetchTickets.fulfilled, (state, action) => {
         state.status = 'succeeded'
-        const payload = action.payload as any
-        const isPaged = payload && Array.isArray(payload.items)
+        const payload: TicketPagedResponse | Ticket[] = action.payload
+        const isPaged = !Array.isArray(payload) && Array.isArray(payload.items)
         const rawItems: Ticket[] = isPaged ? payload.items : (Array.isArray(payload) ? payload : [])
 
         if (isPaged) {

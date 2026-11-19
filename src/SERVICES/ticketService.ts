@@ -157,6 +157,9 @@ export const ticketService = {
     if (input.hp_company_field) {
       formData.append('hp_company_field', input.hp_company_field);
     }
+    if (input.registrarSeguimiento) {
+      formData.append('registrar_seguimiento', 'true');
+    }
 
     const response = await api.post<BackendTicketResponse>('/tickets/', formData, {
       headers: {

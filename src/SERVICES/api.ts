@@ -25,15 +25,6 @@ export const api = axios.create({
   }
 });
 
-// Interceptor para inyectar token JWT automáticamente en peticiones (fallback si existiera)
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('coopya_auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 // Interceptor para capturar expiración o falta de sesión
 api.interceptors.response.use(
   (response) => response,
@@ -44,7 +35,6 @@ api.interceptors.response.use(
       !window.location.pathname.includes('/login') &&
       !window.location.pathname.includes('/crearticket-usuario')
     ) {
-      localStorage.removeItem('coopya_auth_token');
       localStorage.removeItem('coopya_auth_user');
       window.location.href = '/login';
     }

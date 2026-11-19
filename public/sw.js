@@ -61,7 +61,7 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(self.registration.showNotification(title, options));
-  } catch (_err) {
+  } catch {
     const text = event.data.text();
     event.waitUntil(
       self.registration.showNotification('🎫 Tickets Coopya', {

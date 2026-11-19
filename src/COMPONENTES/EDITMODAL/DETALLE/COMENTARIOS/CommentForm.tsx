@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SendIcon } from '../../../COMUN/Icons';
 
 interface CommentFormProps {
   onSubmit: (mensaje: string) => Promise<void>;
   isSubmitting: boolean;
+  onDraftChange?: (hasDraft: boolean) => void;
 }
 
 export const CommentForm: React.FC<CommentFormProps> = ({
   onSubmit,
   isSubmitting,
+  onDraftChange,
 }) => {
   const [mensaje, setMensaje] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    onDraftChange?.(mensaje.trim().length > 0);
+  }, [mensaje, onDraftChange]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

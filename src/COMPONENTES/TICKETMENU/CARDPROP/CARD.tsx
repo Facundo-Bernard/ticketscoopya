@@ -191,7 +191,15 @@ export default function Card({
             {card.users && card.users.length > 0 ? card.users[0] : card.user}
           </span>
           {card.users && card.users.length > 1 && (
-            <span className="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle flex-shrink-0" style={{ fontSize: '10px' }}>
+            <span
+              className="badge rounded-pill flex-shrink-0"
+              style={{
+                fontSize: '10px',
+                backgroundColor: '#fef2f2',
+                color: 'var(--coopya-red)',
+                border: '1px solid #fecaca',
+              }}
+            >
               +{card.users.length - 1}
             </span>
           )}

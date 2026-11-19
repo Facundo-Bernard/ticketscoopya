@@ -37,6 +37,36 @@ export interface CreateTicketInput {
   columnId?: number | string;
   columna?: number | string;
   hp_company_field?: string;
+  registrarSeguimiento?: boolean;
+}
+
+export interface RequesterTicket {
+  id: string;
+  identificador: string;
+  titulo: string;
+  descripcion: string;
+  estado: string;
+  imagenes: string[];
+  fechaCreacion: string;
+  fechaModificacion?: string;
+}
+
+export interface RequesterTicketsSession {
+  linkedEmail: string | null;
+  localTicketsCount: number;
+  items: RequesterTicket[];
+}
+
+export interface AccessCodeItem {
+  id: string;
+  correo: string;
+  codigo: string;
+  estado: 'pendiente' | 'usado' | 'revocado' | 'expirado';
+  solicitadoPor: 'usuario' | 'operador';
+  generadoPor?: string | null;
+  creadoEn: string;
+  expiraEn: string;
+  usadoEn?: string | null;
 }
 
 export interface ColumnOption {

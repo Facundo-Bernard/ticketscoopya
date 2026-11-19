@@ -7,9 +7,10 @@ import CommentForm from './CommentForm';
 
 interface TicketComentariosProps {
   ticketId: string | number;
+  onDraftChange?: (hasDraft: boolean) => void;
 }
 
-export const TicketComentarios: React.FC<TicketComentariosProps> = ({ ticketId }) => {
+export const TicketComentarios: React.FC<TicketComentariosProps> = ({ ticketId, onDraftChange }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const currentOperator = getOperatorIdentity();
 
@@ -70,6 +71,7 @@ export const TicketComentarios: React.FC<TicketComentariosProps> = ({ ticketId }
             <CommentForm
               onSubmit={handleAddComment}
               isSubmitting={isSubmitting}
+              onDraftChange={onDraftChange}
             />
           </div>
         </div>
